@@ -84,11 +84,50 @@
           gap: 12px;
         }
       }
+      /* ── ネオン ────────────────────────────────────────────────
+       * 光り方は2種類しかない。
+       *   .lit    静かに滲む(常時)。文字色は変えないのでコントラストは落ちない
+       *   flicker 切れかけ(明滅)。**要素ごとに周期と遅延をずらす** ——
+       *           同期して点滅すると通りではなくストロボになる。発作の危険も上がる
+       * 明滅の間隔はどれも3秒以上。1秒に3回以上の点滅(WCAG 2.3.1 の閾値)には
+       * どう重なっても届かない。 */
+      .lit {
+        text-shadow:
+          0 0 6px rgba(34, 232, 255, 0.55),
+          0 0 18px rgba(34, 232, 255, 0.25);
+      }
+      .lit-pink {
+        text-shadow:
+          0 0 6px rgba(255, 46, 148, 0.5),
+          0 0 18px rgba(255, 46, 148, 0.2);
+      }
+
       h1 {
         font-size: 26px;
         font-weight: 500;
         letter-spacing: 0.3em;
         color: #fff;
+        text-shadow:
+          0 0 8px rgba(34, 232, 255, 0.6),
+          0 0 26px rgba(34, 232, 255, 0.3),
+          0 0 48px rgba(34, 232, 255, 0.12);
+        animation: sign 7s ease-in-out infinite;
+      }
+      /* 看板の本体。長い周期でゆっくり息をする。切れかけてはいない。 */
+      @keyframes sign {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        47% {
+          opacity: 1;
+        }
+        49% {
+          opacity: 0.72;
+        }
+        51% {
+          opacity: 1;
+        }
       }
       .thesis {
         font-size: 19px;
@@ -139,6 +178,9 @@
       }
       .kill {
         color: var(--magenta);
+        text-shadow:
+          0 0 6px rgba(255, 46, 148, 0.5),
+          0 0 18px rgba(255, 46, 148, 0.2);
       }
 
       /* ── 唯一の動き ──────────────────────────────────────────
@@ -175,13 +217,45 @@
       }
 
       .rule {
-        color: var(--mute);
+        color: var(--cyan);
         margin: 44px 0 22px;
         font-size: 12px;
         letter-spacing: 0.06em;
         overflow: hidden;
         white-space: nowrap;
+        text-shadow:
+          0 0 5px rgba(34, 232, 255, 0.45),
+          0 0 16px rgba(34, 232, 255, 0.18);
       }
+      /* 通りの看板。**1本ずつ固有の周期と遅延**を持たせる。
+         nth-of-type は他の <p>(キャプション等)も数えてしまい、
+         4本が完全に同期して点滅していた —— 通りではなくストロボになる。
+         値は各 .rule のインライン --d / --dur で指定する。 */
+      .rule {
+        animation: sputter var(--dur, 9s) ease-in-out var(--d, 0s) infinite;
+      }
+      @keyframes sputter {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        28% {
+          opacity: 1;
+        }
+        30% {
+          opacity: 0.42;
+        }
+        32% {
+          opacity: 1;
+        }
+        66% {
+          opacity: 0.88;
+        }
+        68% {
+          opacity: 1;
+        }
+      }
+
       ol {
         list-style: none;
         counter-reset: n;
@@ -206,6 +280,10 @@
         letter-spacing: 0.12em;
         margin-bottom: 4px;
         line-height: 1.7;
+        /* 白いまま滲ませる。色を変えないのでコントラストは 16.9:1 のまま。 */
+        text-shadow:
+          0 0 7px rgba(216, 238, 246, 0.28),
+          0 0 20px rgba(34, 232, 255, 0.14);
       }
       ol li p {
         font-size: 13px;
@@ -297,6 +375,7 @@
         font-size: 14px;
         margin-top: 22px;
         letter-spacing: 0.06em;
+        text-shadow: 0 0 6px rgba(216, 238, 246, 0.22);
       }
       dl.faq dd {
         font-size: 13px;
@@ -387,11 +466,11 @@
       </tr>
       <tr>
         <td>品目カタログ</td>
-        <td>1,182 種（すべてドット絵。名前を打たずに押すだけ）</td>
+        <td><b class="lit">1,182 種</b>（すべてドット絵。名前を打たずに押すだけ）</td>
       </tr>
       <tr>
         <td>レシピ</td>
-        <td>520 品（家にある材料で作れる順に並ぶ）</td>
+        <td><b class="lit">520 品</b>（家にある材料で作れる順に並ぶ）</td>
       </tr>
       <tr class="glow">
         <td>期限警告</td>
@@ -399,15 +478,17 @@
       </tr>
       <tr>
         <td>通信</td>
-        <td>アカウント不要。ネットを切っても全機能が動く</td>
+        <td><b class="lit">アカウント不要。</b>ネットを切っても全機能が動く</td>
       </tr>
       <tr>
         <td>無料の範囲</td>
-        <td>品目200・保管場所3つまで。機能の制限はありません</td>
+        <td>品目200・保管場所3つまで。<b class="lit">機能の制限はありません</b></td>
       </tr>
       <tr>
         <td>価格</td>
-        <td>無料（NeoKura Pro：月額 ¥400 / 年額 ¥3,000・14日間無料）</td>
+        <td>
+          <b class="lit">無料</b>（NeoKura Pro：月額 ¥400 / 年額 ¥3,000・<b class="lit-pink">14日間無料</b>）
+        </td>
       </tr>
       <tr>
         <td>非対応</td>
@@ -425,9 +506,9 @@
         decoding="async"
       />
     </div>
-    <p class="wall-cap jp">1,182品目のうち72点。名前を打たずに、押すだけ。</p>
+    <p class="wall-cap jp"><b class="lit">1,182品目</b>のうち72点。名前を打たずに、押すだけ。</p>
 
-    <p class="rule">────────────── OPERATION ──────────────</p>
+    <p class="rule" style="--dur: 8.3s; --d: 0s">────────────── OPERATION ──────────────</p>
 
     <ol class="jp">
       <li>
@@ -472,7 +553,7 @@
       </li>
     </ol>
 
-    <p class="rule">────────────── FUNCTIONS ─────────────</p>
+    <p class="rule" style="--dur: 9.7s; --d: 1.4s">────────────── FUNCTIONS ─────────────</p>
 
     <table class="jp">
       <tr>
@@ -546,7 +627,7 @@
       </tr>
     </table>
 
-    <p class="rule">──────────── FREE / PRO ─────────────</p>
+    <p class="rule" style="--dur: 11.2s; --d: 3.1s">──────────── FREE / PRO ─────────────</p>
 
     <table class="jp">
       <tr>
@@ -559,7 +640,7 @@
         <td>Pro：家族共有</td>
         <td>
           家族の端末と在庫・買い物リストを同期。
-          <strong>1人が課金すれば世帯全員</strong>に行き渡ります
+          <b class="lit-pink">1人が課金すれば世帯全員</b>に行き渡ります
         </td>
       </tr>
       <tr>
@@ -586,9 +667,9 @@
         decoding="async"
       />
     </div>
-    <p class="wall-cap jp">520品のうち36点。家にある材料で作れる順に並びます。</p>
+    <p class="wall-cap jp"><b class="lit">520品</b>のうち36点。家にある材料で作れる順に並びます。</p>
 
-    <p class="rule">──────────────── WHY ────────────────</p>
+    <p class="rule" style="--dur: 10.4s; --d: 5.6s">──────────────── WHY ────────────────</p>
 
     <ol class="jp">
       <li>
@@ -625,7 +706,7 @@
       </li>
     </ol>
 
-    <p class="rule">────────────── SCREENS ──────────────</p>
+    <p class="rule" style="--dur: 12.9s; --d: 2.2s">────────────── SCREENS ──────────────</p>
 
     <!-- 画像は assets/screens/ に配置する(下の「素材」を参照)。
          幅の実寸を width/height に入れて CLS を出さないこと。 -->
@@ -691,7 +772,7 @@
       <p class="cta-note jp">無料 ・ iPhone / iOS 16.4以降 ・ 日本語 / English</p>
     </div>
 
-    <p class="rule">──────────────── FAQ ────────────────</p>
+    <p class="rule" style="--dur: 9.1s; --d: 6.8s">──────────────── FAQ ────────────────</p>
 
     <dl class="faq jp">
       <dt>無料でどこまで使えますか？</dt>
