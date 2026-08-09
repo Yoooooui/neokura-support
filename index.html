@@ -221,6 +221,60 @@
         white-space: nowrap;
       }
 
+      /* ドット絵の壁。「1,182品目ぜんぶドット絵」は文字より現物を見せた方が早い。
+         上下をフェードさせて、まだ続いている感じを出す。 */
+      .wall {
+        margin: 26px 0 0;
+        border: 1px solid var(--line);
+        overflow: hidden;
+        position: relative;
+      }
+      .wall img {
+        width: 100%;
+        height: auto;
+        display: block;
+        image-rendering: pixelated; /* ドット絵を滑らかに補間させない */
+      }
+      .wall::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(
+          to bottom,
+          rgba(5, 6, 11, 0.55) 0%,
+          rgba(5, 6, 11, 0) 22%,
+          rgba(5, 6, 11, 0) 78%,
+          rgba(5, 6, 11, 0.85) 100%
+        );
+      }
+      .wall-cap {
+        margin-top: 8px;
+        font-size: 11px;
+        color: var(--mute);
+        letter-spacing: 0.1em;
+      }
+
+      /* 区切りにシアンの細い光を1本通す。文字は光らせない(本文の可読性を守る)。 */
+      .rule {
+        position: relative;
+      }
+      .rule::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        /* .rule は overflow:hidden(長い罫線を切るため)。外に出すと消えるので内側に置く。 */
+        bottom: 3px;
+        height: 1px;
+        background: linear-gradient(
+          to right,
+          rgba(34, 232, 255, 0) 0%,
+          rgba(34, 232, 255, 0.45) 50%,
+          rgba(34, 232, 255, 0) 100%
+        );
+      }
+
       .shots {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -309,9 +363,7 @@
 
   <body>
     <header>
-      <div class="id">
-        <span>NEOKURA / HOME INVENTORY OS</span><span>v1.2 — iOS 16.4+</span>
-      </div>
+      <div class="id"><span>NEOKURA / HOME INVENTORY OS</span><span>v1.2 — iOS 16.4+</span></div>
       <h1>NEOKURA</h1>
       <p class="thesis jp">家の蔵に、<em>電気</em>を通す。</p>
 
@@ -363,6 +415,18 @@
       </tr>
     </table>
 
+    <div class="wall">
+      <img
+        src="assets/wall-items.webp"
+        width="768"
+        height="384"
+        alt="食材や日用品のドット絵が12×6のタイルで並んでいる様子"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+    <p class="wall-cap jp">1,182品目のうち72点。名前を打たずに、押すだけ。</p>
+
     <p class="rule">────────────── OPERATION ──────────────</p>
 
     <ol class="jp">
@@ -413,10 +477,7 @@
     <table class="jp">
       <tr>
         <td>登録のしかた</td>
-        <td>
-          ドット絵タイル / 品目名で検索 / バーコード（JAN）/ 音声 /
-          レシートの撮影（OCR）/ QRラベル
-        </td>
+        <td>ドット絵タイル / 品目名で検索 / バーコード（JAN）/ 音声 / レシートの撮影（OCR）/ QRラベル</td>
       </tr>
       <tr>
         <td>検索</td>
@@ -425,22 +486,20 @@
       <tr>
         <td>買い物</td>
         <td>
-          店内モード（売り場順）/ 予定日を決めて買う / 家族への「頼み」/
-          発注点を割ったら自動でリストへ / LINEなどへ共有
+          店内モード（売り場順）/ 予定日を決めて買う / 家族への「頼み」/ 発注点を割ったら自動でリストへ /
+          LINEなどへ共有
         </td>
       </tr>
       <tr>
         <td>しまう</td>
         <td>
-          スワイプで入庫。置き場所は前回から自動。期限はチップを1タップで調整。
-          その場で写真とメモも残せる
+          スワイプで入庫。置き場所は前回から自動。期限はチップを1タップで調整。 その場で写真とメモも残せる
         </td>
       </tr>
       <tr>
         <td>使う・減らす</td>
         <td>
-          スワイプで出庫 / レシピの「作った」で材料をまとめて消費 /
-          廃棄は理由つきで記録 / どれも取り消せる
+          スワイプで出庫 / レシピの「作った」で材料をまとめて消費 / 廃棄は理由つきで記録 / どれも取り消せる
         </td>
       </tr>
       <tr>
@@ -453,8 +512,8 @@
       <tr>
         <td>料理</td>
         <td>
-          在庫から作れる順に520品 / 食材から逆引き（2つ選ぶとAND）/
-          アレルギーで分ける / 手順・コツ・調理時間 / 材料がどの棚にあるか
+          在庫から作れる順に520品 / 食材から逆引き（2つ選ぶとAND）/ アレルギーで分ける / 手順・コツ・調理時間
+          / 材料がどの棚にあるか
         </td>
       </tr>
       <tr>
@@ -467,17 +526,11 @@
       </tr>
       <tr>
         <td>通知</td>
-        <td>
-          期限アラート / 買い物リマインダー（曜日・時刻指定）/ 週次サマリ /
-          予定買いの当日朝
-        </td>
+        <td>期限アラート / 買い物リマインダー（曜日・時刻指定）/ 週次サマリ / 予定買いの当日朝</td>
       </tr>
       <tr>
         <td>記録</td>
-        <td>
-          購入履歴・よく買う品目・捨てたものの可視化。金額は任意入力で、
-          入れなければ出ません
-        </td>
+        <td>購入履歴・よく買う品目・捨てたものの可視化。金額は任意入力で、 入れなければ出ません</td>
       </tr>
       <tr>
         <td>実績</td>
@@ -499,8 +552,7 @@
       <tr>
         <td>無料でできる</td>
         <td>
-          上に書いた機能すべて。CSVの書き出しも含みます。
-          制限は品目200・保管場所3つという「量」だけです
+          上に書いた機能すべて。CSVの書き出しも含みます。 制限は品目200・保管場所3つという「量」だけです
         </td>
       </tr>
       <tr>
@@ -523,6 +575,18 @@
         <td>品目・保管場所が無制限。全テーマ使い放題</td>
       </tr>
     </table>
+
+    <div class="wall">
+      <img
+        src="assets/wall-dishes.webp"
+        width="768"
+        height="192"
+        alt="完成した料理のドット絵が12×3のタイルで並んでいる様子"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+    <p class="wall-cap jp">520品のうち36点。家にある材料で作れる順に並びます。</p>
 
     <p class="rule">──────────────── WHY ────────────────</p>
 
@@ -622,12 +686,7 @@
            がガイドラインの要点。原寸は 108.85×40 で、ここでは2倍に置いている。
            https://developer.apple.com/app-store/marketing/guidelines/jp/#section-badges -->
       <a class="cta" href="https://apps.apple.com/jp/app/id6795165520">
-        <img
-          src="assets/appstore-badge.svg"
-          width="218"
-          height="80"
-          alt="App Store からダウンロード"
-        />
+        <img src="assets/appstore-badge.svg" width="218" height="80" alt="App Store からダウンロード" />
       </a>
       <p class="cta-note jp">無料 ・ iPhone / iOS 16.4以降 ・ 日本語 / English</p>
     </div>
@@ -652,7 +711,9 @@
 
       <dt>アレルギー表示は信用してよいですか？</dt>
       <dd>
-        レシピの材料名からの判定です。醤油の小麦のように見落としやすいものも拾いますが、<strong>実際の商品表示は必ずご確認ください。</strong>
+        レシピの材料名からの判定です。醤油の小麦のように見落としやすいものも拾いますが、<strong
+          >実際の商品表示は必ずご確認ください。</strong
+        >
       </dd>
 
       <dt>光の明滅が苦手です</dt>
@@ -669,9 +730,7 @@
       </dd>
 
       <dt>家族の人数ぶん課金が要りますか？</dt>
-      <dd>
-        要りません。<strong>1人が課金すれば世帯全員</strong>が使えます。誰が払っているかは問いません。
-      </dd>
+      <dd>要りません。<strong>1人が課金すれば世帯全員</strong>が使えます。誰が払っているかは問いません。</dd>
 
       <dt>無料のままだと何ができなくなりますか？</dt>
       <dd>
@@ -679,9 +738,7 @@
       </dd>
 
       <dt>iPhoneを2台持っています。同期できますか？</dt>
-      <dd>
-        家族共有と同じ仕組みで、自分の端末どうしでも同期できます（Pro）。
-      </dd>
+      <dd>家族共有と同じ仕組みで、自分の端末どうしでも同期できます（Pro）。</dd>
 
       <dt>バーコードで出てこない商品があります</dt>
       <dd>
@@ -689,14 +746,10 @@
       </dd>
 
       <dt>金額は入れないといけませんか？</dt>
-      <dd>
-        任意です。入れなければ分析にも金額は出ません。レシートの撮影で読み取ることもできます。
-      </dd>
+      <dd>任意です。入れなければ分析にも金額は出ません。レシートの撮影で読み取ることもできます。</dd>
 
       <dt>期限を入れずに登録してもいいですか？</dt>
-      <dd>
-        構いません。期限のないものは明滅しないだけです。長く動いていない在庫は別の形で知らせます。
-      </dd>
+      <dd>構いません。期限のないものは明滅しないだけです。長く動いていない在庫は別の形で知らせます。</dd>
 
       <dt>間違えて減らしてしまいました</dt>
       <dd>
@@ -712,9 +765,8 @@
 
     <footer>
       <a href="https://apps.apple.com/jp/app/id6795165520">App Store</a> ・
-      <a href="support.html">サポート</a> ・
-      <a href="privacy.html">プライバシーポリシー</a> ・ <a href="terms.html">利用規約</a> ・
-      <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a><br />
+      <a href="support.html">サポート</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・
+      <a href="terms.html">利用規約</a> ・ <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a><br />
       © 2026 Yoichi Saito
     </footer>
   </body>
