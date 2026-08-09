@@ -1,71 +1,518 @@
 <!doctype html>
 <html lang="ja">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NeoKura — サポート</title>
-<style>
-  :root{ --bg:#080A0D; --card:#12151a; --fg:#f2f5f4; --muted:#9fb0ad; --accent:#F2F43A; --accent2:#00E5FF; --border:#26302f; }
-  @media (prefers-color-scheme: light){
-    :root{ --bg:#f6f7f5; --card:#ffffff; --fg:#1b201f; --muted:#5c6a67; --accent:#a89400; --accent2:#0090a8; --border:#e2e6e2; }
-  }
-  *{ box-sizing:border-box; }
-  body{ margin:0; font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
-        background:var(--bg); color:var(--fg); line-height:1.75; -webkit-font-smoothing:antialiased; }
-  .wrap{ max-width:720px; margin:0 auto; padding:32px 20px 64px; }
-  header{ display:flex; align-items:center; gap:14px; padding:24px 0 8px; }
-  .logo{ width:52px; height:52px; border-radius:13px; background:linear-gradient(135deg,var(--accent),var(--accent2));
-         display:flex; align-items:center; justify-content:center; font-size:26px; }
-  h1{ font-size:1.5rem; margin:0; }
-  .tag{ color:var(--muted); font-size:.95rem; margin:2px 0 0; }
-  .card{ background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 24px; margin:22px 0; }
-  h2{ font-size:1.1rem; margin:0 0 10px; }
-  p{ margin:8px 0; }
-  a{ color:var(--accent2); }
-  .contact{ font-size:1.05rem; font-weight:600; }
-  ul{ margin:8px 0; padding-left:1.2em; }
-  li{ margin:4px 0; }
-  footer{ color:var(--muted); font-size:.85rem; text-align:center; margin-top:40px; }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <div class="logo">🗄️</div>
-    <div>
-      <h1>NeoKura(ネオクラ)</h1>
-      <p class="tag">家庭の冷蔵庫・冷凍庫・倉庫を業務用WMSの理論で管理するアプリ(iOS)</p>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NeoKura — 冷蔵庫の在庫・賞味期限管理</title>
+    <meta
+      name="description"
+      content="冷蔵庫・冷凍庫・パントリーを業務用倉庫の理論で動かす在庫管理アプリ。1182品目がドット絵のタイル。期限が近いものはネオンのように明滅して知らせます。アカウント不要・オフライン動作。"
+    />
+    <link rel="canonical" href="https://yoooooui.github.io/neokura-support/" />
+
+    <!-- OGP。画像は 1200×630 を assets/ogp.png に置く(未配置ならXではテキストのみになる)。 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="NeoKura — 冷蔵庫の在庫・賞味期限管理" />
+    <meta
+      property="og:description"
+      content="家の蔵に、電気を通す。1182品目がドット絵のタイル。期限が近いものは明滅して知らせます。"
+    />
+    <meta property="og:url" content="https://yoooooui.github.io/neokura-support/" />
+    <meta property="og:image" content="https://yoooooui.github.io/neokura-support/assets/ogp.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <style>
+      /* ── トークン ───────────────────────────────────────────────
+       * 色は #05060B に対する実測コントラストを併記してある。
+       * 4.5:1 未満の色を本文・リンクに使わないこと(案の時点で mute 4.33 /
+       * 脚注 1.97 だった。脚注にはリンクが入るので致命的だった)。 */
+      :root {
+        --void: #05060b; /* 背景 */
+        --line: #22303d; /* 罫線。テキストではないので 3:1 未満でも可 */
+        --cyan: #22e8ff; /* 13.6:1 */
+        --magenta: #ff2e94; /* 5.9:1 */
+        --paper: #d8eef6; /* 16.9:1 本文 */
+        --sub: #9fb6c0; /* 9.6:1 補足 */
+        --mute: #7592a0; /* 6.2:1 ラベル・脚注。案の #5E7884(4.33) から上げた */
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        background: var(--void);
+        color: var(--paper);
+        font-family: 'SF Mono', ui-monospace, Menlo, 'Hiragino Sans', monospace;
+        font-size: 14px;
+        line-height: 2.1;
+        padding: 48px 20px 96px;
+        max-width: 680px;
+        margin: 0 auto;
+      }
+      .jp {
+        font-family: 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
+        font-weight: 300;
+      }
+      a {
+        color: var(--cyan);
+      }
+
+      header {
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 26px;
+        margin-bottom: 36px;
+      }
+      /* 狭い画面では折り返して「OS」だけが次行に落ちる。縦に積んで避ける。 */
+      .id {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 11px;
+        color: var(--mute);
+        letter-spacing: 0.14em;
+        margin-bottom: 18px;
+        line-height: 1.8;
+      }
+      @media (min-width: 480px) {
+        .id {
+          flex-direction: row;
+          justify-content: space-between;
+          gap: 12px;
+        }
+      }
+      h1 {
+        font-size: 26px;
+        font-weight: 500;
+        letter-spacing: 0.3em;
+        color: #fff;
+      }
+      .thesis {
+        font-size: 19px;
+        letter-spacing: 0.08em;
+        margin-top: 14px;
+      }
+      .thesis em {
+        font-style: normal;
+        color: var(--cyan);
+        text-shadow: 0 0 10px rgba(34, 232, 255, 0.5);
+      }
+
+      .top-cta {
+        margin-top: 20px;
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 4px 14px;
+      }
+      .top-cta a {
+        text-decoration: none;
+        border-bottom: 1px solid currentColor;
+        padding-bottom: 2px;
+      }
+      .top-cta span {
+        color: var(--mute);
+        font-size: 12px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 34px 0;
+      }
+      td {
+        border: 1px solid var(--line);
+        padding: 12px 14px;
+        vertical-align: top;
+        font-size: 13px;
+      }
+      td:first-child {
+        width: 34%;
+        color: var(--mute);
+        letter-spacing: 0.1em;
+        white-space: nowrap;
+      }
+      .kill {
+        color: var(--magenta);
+      }
+
+      /* ── 唯一の動き ──────────────────────────────────────────
+       * 案Bの肝は「1ページに光るのは1箇所だけ」。抑制が効いているぶん強く見える。
+       * ここを増やした瞬間にこのデザインは死ぬ。 */
+      tr.glow td {
+        border-color: #0e5c6b;
+      }
+      tr.glow td:last-child {
+        color: var(--cyan);
+        text-shadow: 0 0 9px rgba(34, 232, 255, 0.45);
+        animation: pulse 3.6s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        12% {
+          opacity: 0.45;
+        }
+        15% {
+          opacity: 1;
+        }
+        55% {
+          opacity: 0.9;
+        }
+        58% {
+          opacity: 0.55;
+        }
+        61% {
+          opacity: 1;
+        }
+      }
+
+      .rule {
+        color: var(--mute);
+        margin: 44px 0 22px;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      ol {
+        list-style: none;
+        counter-reset: n;
+      }
+      ol li {
+        counter-increment: n;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        gap: 18px;
+      }
+      ol li::before {
+        content: counter(n, decimal-leading-zero);
+        color: var(--mute);
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        padding-top: 6px;
+      }
+      ol li h2 {
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        margin-bottom: 4px;
+        line-height: 1.7;
+      }
+      ol li p {
+        font-size: 13px;
+        color: var(--sub);
+      }
+      .pro {
+        color: var(--magenta);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        border: 1px solid var(--magenta);
+        padding: 1px 6px;
+        margin-left: 8px;
+        white-space: nowrap;
+      }
+
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin: 30px 0 0;
+      }
+      .shots img {
+        width: 100%;
+        height: auto;
+        border: 1px solid var(--line);
+        display: block;
+      }
+      @media (min-width: 600px) {
+        .shots {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+
+      dl.faq dt {
+        font-size: 14px;
+        margin-top: 22px;
+        letter-spacing: 0.06em;
+      }
+      dl.faq dd {
+        font-size: 13px;
+        color: var(--sub);
+        margin-top: 4px;
+      }
+
+      /* CTA。Apple公式バッジを assets/ に置いたら .cta を差し替える(下の注記)。 */
+      .cta-wrap {
+        text-align: center;
+        margin: 56px 0 0;
+      }
+      /* バッジは加工しない(枠・影・色替えを載せない)のがガイドライン。
+         リンク側にも余計な装飾を付けず、フォーカスリングだけ足す。 */
+      .cta {
+        display: inline-block;
+        line-height: 0;
+      }
+      .cta img {
+        width: 218px;
+        height: auto;
+        max-width: 70vw;
+      }
+      .cta:focus-visible {
+        outline: 2px solid var(--paper);
+        outline-offset: 3px;
+      }
+      .cta-note {
+        margin-top: 12px;
+        font-size: 12px;
+        color: var(--mute);
+      }
+
+      footer {
+        margin-top: 56px;
+        padding-top: 22px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--mute);
+        letter-spacing: 0.1em;
+        text-align: center;
+        line-height: 2.4;
+      }
+      footer a {
+        color: var(--mute);
+        text-decoration: underline;
+      }
+      footer a:hover,
+      footer a:focus-visible {
+        color: var(--cyan);
+      }
+
+      /* 光過敏性発作への配慮。ネオン明滅が売りである以上ここは絶対に外さない。 */
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="id">
+        <span>NEOKURA / HOME INVENTORY OS</span><span>v1.2 — iOS 16.4+</span>
+      </div>
+      <h1>NEOKURA</h1>
+      <p class="thesis jp">家の蔵に、<em>電気</em>を通す。</p>
+
+      <!-- ファーストビューのCTA。X から来た人の滞在は10秒程度で、
+           ページ末尾のCTAまでは届かない。仕様書の体裁を崩さないよう
+           罫線1本ぶんの控えめな行にしてある。 -->
+      <p class="top-cta">
+        <a href="https://apps.apple.com/jp/app/id6795165520">▸ App Store で入手</a>
+        <span class="jp">無料 ・ iOS 16.4以降</span>
+      </p>
+    </header>
+
+    <table class="jp">
+      <tr>
+        <td>名称</td>
+        <td>NeoKura ＝ ネオ蔵 × ネオクラウド × ネオン</td>
+      </tr>
+      <tr>
+        <td>管理対象</td>
+        <td>冷蔵庫 / 冷凍庫 / パントリー / 倉庫 / 防災備蓄 / 家電の保証</td>
+      </tr>
+      <tr>
+        <td>品目カタログ</td>
+        <td>1,182 種（すべてドット絵。名前を打たずに押すだけ）</td>
+      </tr>
+      <tr>
+        <td>レシピ</td>
+        <td>520 品（家にある材料で作れる順に並ぶ）</td>
+      </tr>
+      <tr class="glow">
+        <td>期限警告</td>
+        <td>切れかけのネオン看板のように、明滅して知らせる</td>
+      </tr>
+      <tr>
+        <td>通信</td>
+        <td>アカウント不要。ネットを切っても全機能が動く</td>
+      </tr>
+      <tr>
+        <td>価格</td>
+        <td>無料（NeoKura Pro：月額 ¥400 / 年額 ¥3,000・14日間無料）</td>
+      </tr>
+      <tr>
+        <td>非対応</td>
+        <td class="kill">家庭以外の在庫管理。<span class="jp">それでいい。</span></td>
+      </tr>
+    </table>
+
+    <p class="rule">────────────── OPERATION ──────────────</p>
+
+    <ol class="jp">
+      <li>
+        <div>
+          <h2>買って、しまう。動作はひとつ。</h2>
+          <p>
+            よく買う物はタップ1つでリストへ。店内モードは売り場順に並び、帰宅後は「しまう」を押すだけ。置き場所は前回から覚えています。
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h2>何がどこに、いつからあるか。</h2>
+          <p>
+            家じゅうの在庫を一望。買う前に「家にある」と出るので二重買いが止まり、冷凍庫で化石になった食材も見つかります。
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h2>期限が近いものは、明滅する。</h2>
+          <p>
+            赤い文字で「あと2日」と書くより、切れかけた蛍光灯のように光っているほうが視界の端でも気づきます。演出が苦手な方は設定でまとめて消せます。
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h2>食べたい食材から、レシピを引く。</h2>
+          <p>
+            タイルをタップするだけ。2つ選ぶと「両方使う料理」に絞れます。避けたい食材を選べば、それを含む料理を別に分けられます（表示義務8品目＋推奨20品目）。
+          </p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h2>蔵は、家族のもの。<span class="pro">PRO</span></h2>
+          <p>
+            家族の端末と在庫・買い物リストを同期。「あれ買ってきて」が頼みリストに届きます。1人が課金すれば世帯全員に行き渡ります。
+          </p>
+        </div>
+      </li>
+    </ol>
+
+    <p class="rule">────────────── SCREENS ──────────────</p>
+
+    <!-- 画像は assets/screens/ に配置する(下の「素材」を参照)。
+         幅の実寸を width/height に入れて CLS を出さないこと。 -->
+    <div class="shots">
+      <img
+        src="assets/screens/01-home.webp"
+        width="540"
+        height="1170"
+        alt="ホーム画面。今日やることが1つだけ光り、下に倉庫マップが並んでいる"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="assets/screens/02-cook.webp"
+        width="540"
+        height="1170"
+        alt="つくる画面。家にある材料で作れる料理が作れる順に並んでいる"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="assets/screens/03-ingredient-search.webp"
+        width="540"
+        height="1170"
+        alt="食材から探す画面。食材のドット絵タイルが並び、在庫のあるものが先に出ている"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="assets/screens/04-catalog.webp"
+        width="540"
+        height="1170"
+        alt="品目カタログ。野菜のドット絵タイルが画面いっぱいに並んでいる"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="assets/screens/05-shopping.webp"
+        width="540"
+        height="1170"
+        alt="買い物リスト。買う・買った・しまう が1画面に並んでいる"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="assets/screens/06-warehouse.webp"
+        width="540"
+        height="1170"
+        alt="倉庫マップ。冷蔵庫・冷凍庫・棚の区画と、期限が近い在庫の一覧"
+        loading="lazy"
+        decoding="async"
+      />
     </div>
-  </header>
 
-  <div class="card">
-    <h2>このアプリについて</h2>
-    <p>「NeoKura」は、家庭の在庫を業務用倉庫管理システム(WMS)の理論で管理するアプリです。買い物→しまう→使うが一本の流れになっており、期限が近い在庫は色で警告、よく買う品目は自動でリストに並びます。基本機能はアカウント登録不要でオフラインで完結し、データは端末内に保存されます。Pro(家族共有)を有効にすると、家族の端末どうしで在庫と買い物リストをリアルタイムに同期できます。</p>
-  </div>
+    <div class="cta-wrap">
+      <!-- Apple公式の日本語バッジ(White lockup)。暗い背景なので白版を使う。
+           バッジ自体を加工しない・比率を変えない・他のボタンと並べて小さくしない、
+           がガイドラインの要点。原寸は 108.85×40 で、ここでは2倍に置いている。
+           https://developer.apple.com/app-store/marketing/guidelines/jp/#section-badges -->
+      <a class="cta" href="https://apps.apple.com/jp/app/id6795165520">
+        <img
+          src="assets/appstore-badge.svg"
+          width="218"
+          height="80"
+          alt="App Store からダウンロード"
+        />
+      </a>
+      <p class="cta-note jp">無料 ・ iPhone / iOS 16.4以降 ・ 日本語 / English</p>
+    </div>
 
-  <div class="card">
-    <h2>お問い合わせ・サポート</h2>
-    <p>ご質問・不具合のご報告・ご要望は、下記メールまでお気軽にご連絡ください。できるだけ早くお返事します。</p>
-    <p class="contact"><a href="mailto:qitengyangyi93@gmail.com">qitengyangyi93@gmail.com</a></p>
-    <p style="color:var(--muted);font-size:.9rem;">お問い合わせの際は、iOSのバージョンと、可能であれば発生した操作を教えていただけると解決が早くなります。</p>
-  </div>
+    <p class="rule">──────────────── FAQ ────────────────</p>
 
-  <div class="card">
-    <h2>よくある質問</h2>
-    <ul>
-      <li><strong>アカウント登録は必要ですか?</strong> いいえ。基本機能はアカウント不要で、データは端末内に保存されます。</li>
-      <li><strong>データはどこに保存されますか?</strong> 通常は端末内です。Pro(家族共有)の同期を有効にした場合のみ、匿名認証を用いてクラウド(Supabase)へ保存します。</li>
-      <li><strong>家族共有はどう始めますか?</strong> アプリ内の「家族と共有」から世帯を作成・招待コードで参加できます。同じ世帯の端末どうしだけがデータを共有します。</li>
-      <li><strong>機種変更したいのですが?</strong> CSVエクスポートでいつでもデータを書き出せます。家族共有を使っている場合はクラウド側にも保存されています。</li>
-    </ul>
-  </div>
+    <dl class="faq jp">
+      <dt>無料でどこまで使えますか？</dt>
+      <dd>
+        在庫管理・レシピ・買い物リスト・CSVエクスポートは全部無料です。Proは家族共有と、買い物予測・好みに寄る献立提案だけです。
+      </dd>
 
-  <div class="card">
-    <h2>プライバシー</h2>
-    <p>本アプリは広告・トラッキング・利用状況解析を行いません。詳しくは <a href="privacy.html">プライバシーポリシー</a> をご覧ください。利用条件は <a href="terms.html">利用規約</a> をご覧ください。</p>
-  </div>
+      <dt>アカウント登録は必要ですか？</dt>
+      <dd>
+        不要です。データは端末の中にあり、ネットを切っても動きます。家族共有だけは通信しますが、こちらも匿名で、メールアドレスも名前もお預かりしません。
+      </dd>
 
-  <footer>© 2026 NeoKura</footer>
-</div>
-</body>
+      <dt>機種変更のときは？</dt>
+      <dd>
+        設定からCSVで書き出して、新しい端末で読み込んでください。iCloudバックアップの対象にもなっています。
+      </dd>
+
+      <dt>アレルギー表示は信用してよいですか？</dt>
+      <dd>
+        レシピの材料名からの判定です。醤油の小麦のように見落としやすいものも拾いますが、<strong>実際の商品表示は必ずご確認ください。</strong>
+      </dd>
+
+      <dt>光の明滅が苦手です</dt>
+      <dd>
+        設定の「演出」でまとめて消せます。端末側で「視差効果を減らす」を有効にしている場合も自動で止まります。
+      </dd>
+
+      <dt>Android版は？</dt>
+      <dd>まだありません。検討はしています。</dd>
+    </dl>
+
+    <footer>
+      <a href="https://apps.apple.com/jp/app/id6795165520">App Store</a> ・
+      <a href="support.html">サポート</a> ・
+      <a href="privacy.html">プライバシーポリシー</a> ・ <a href="terms.html">利用規約</a> ・
+      <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a><br />
+      © 2026 Yoichi Saito
+    </footer>
+  </body>
 </html>
