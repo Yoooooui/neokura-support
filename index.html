@@ -159,6 +159,31 @@
         font-size: 12px;
       }
 
+      /* ヒーロー直下の無音ループ。このアプリの核は「光ること」で、
+         静止画では伝わらない。9秒 / 68KB / 音声トラック無し。
+         **prefers-reduced-motion では止める** —— CSSでは動画を止められないので、
+         ページ末尾の4行のスクリプトで pause している(このページで唯一のJS)。 */
+      .loop {
+        margin: 30px 0 0;
+        display: flex;
+        justify-content: center;
+      }
+      .loop video {
+        width: 220px;
+        max-width: 58vw;
+        height: auto;
+        display: block;
+        border: 1px solid var(--line);
+        box-shadow: 0 0 30px rgba(34, 232, 255, 0.12);
+      }
+      .loop-cap {
+        margin-top: 10px;
+        font-size: 11px;
+        color: var(--mute);
+        letter-spacing: 0.1em;
+        text-align: center;
+      }
+
       table {
         width: 100%;
         border-collapse: collapse;
@@ -454,6 +479,22 @@
         <span class="jp">無料 ・ iOS 16.4以降</span>
       </p>
     </header>
+
+    <div class="loop">
+      <video
+        src="assets/loop.mp4"
+        poster="assets/loop-poster.webp"
+        width="440"
+        height="954"
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="none"
+        aria-label="品目のドット絵タイルを押すたびに、枠がシアンのネオンで点灯していく様子"
+      ></video>
+    </div>
+    <p class="loop-cap jp">押すと点く。9秒・音は出ません。</p>
 
     <table class="jp">
       <tr>
@@ -850,5 +891,17 @@
       <a href="terms.html">利用規約</a> ・ <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a><br />
       © 2026 Yoichi Saito
     </footer>
+    <script>
+      /* 明滅が売りである以上、止められることは外せない。CSSでは <video> を
+         止められないので、ここだけJSを使う。ページ内の唯一のスクリプト。 */
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        for (const v of document.querySelectorAll('video')) {
+          v.autoplay = false;
+          v.removeAttribute('loop');
+          v.controls = true;
+          v.pause();
+        }
+      }
+    </script>
   </body>
 </html>
