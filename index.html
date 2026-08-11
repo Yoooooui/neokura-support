@@ -21,6 +21,9 @@
     <meta property="og:image" content="https://yoooooui.github.io/neokura-support/assets/ogp.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+    <link rel="apple-touch-icon" href="assets/app-icon-180.png" />
+
     <script>
       document.documentElement.classList.add('js');
     </script>
@@ -202,21 +205,13 @@
         text-decoration: none;
       }
 
+      /* アプリの実アイコン(蔵の字)をそのまま使う。ページ用の別ロゴを
+         作らない —— ストアで見るものとここで見るものが同じ顔であること。 */
       .brand-mark {
-        position: relative;
-        width: 25px;
-        height: 25px;
-        background: var(--accent);
-        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
-        box-shadow: 0 0 22px rgba(242, 244, 58, 0.38);
-      }
-
-      .brand-mark::after {
-        content: '';
-        position: absolute;
-        inset: 6px;
-        background: var(--void);
-        clip-path: inherit;
+        width: 27px;
+        height: 27px;
+        border-radius: 7px;
+        box-shadow: 0 0 18px rgba(0, 229, 255, 0.35);
       }
 
       .brand-word {
@@ -1439,7 +1434,7 @@
     <nav class="nav" aria-label="メインナビゲーション">
       <div class="shell nav-inner">
         <a class="brand" href="#top" aria-label="NeoKura トップへ">
-          <span class="brand-mark" aria-hidden="true"></span>
+          <img class="brand-mark" src="assets/app-icon-60.png" width="27" height="27" alt="" />
           <span class="brand-word">NEOKURA</span>
         </a>
         <div class="nav-links">
@@ -1689,6 +1684,11 @@
             <p class="eyebrow">DESIGN NOTES</p>
             <h2>この見た目でやっている理由</h2>
             <p>ネオンもドット絵も、飾りで選んだわけではありません。ひとつずつ役目があります。</p>
+            <p>
+              名前のNeoKura(ネオクラ)は「蔵」から取りました。家の食料をまとめて預かっていた
+              昔の蔵を、いまの道具で建て直す——<strong>ネオ蔵</strong>、家族と中身がつながる
+              <strong>ネオクラウド</strong>、期限を知らせる<strong>ネオン</strong>。 この3つを重ねた名前です。
+            </p>
           </div>
           <div class="reason-list reveal">
             <article class="reason-item">
@@ -1746,7 +1746,7 @@
             <span class="plan-name">NEOKURA / PRO</span>
             <h3>家族みんなで、同じ冷蔵庫を見る</h3>
             <div class="price"><strong>¥400</strong><span>/ 月</span></div>
-            <p class="annual">年額 ¥3,000</p>
+            <p class="annual">年額 ¥2,400</p>
             <span class="trial">14日間無料</span>
             <ul class="feature-list">
               <li>家族の端末と在庫・買い物を同期</li>
