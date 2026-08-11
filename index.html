@@ -3,904 +3,1872 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>NeoKura — 冷蔵庫の在庫・賞味期限管理</title>
+    <meta name="theme-color" content="#080a0d" />
+    <title>NeoKura — 冷蔵庫の在庫・賞味期限管理アプリ</title>
     <meta
       name="description"
-      content="冷蔵庫・冷凍庫・パントリーを業務用倉庫の理論で動かす在庫管理アプリ。1182品目がドット絵のタイル。期限が近いものはネオンのように明滅して知らせます。アカウント不要・オフライン動作。"
+      content="冷蔵庫の奥で、また何かが使えなくなっていた——それを終わらせるために作った家庭用の在庫アプリ。品目1,182種はぜんぶドット絵、期限が近いものは光って知らせます。アカウント不要・オフラインで動きます。"
     />
     <link rel="canonical" href="https://yoooooui.github.io/neokura-support/" />
 
-    <!-- OGP。画像は 1200×630 を assets/ogp.png に置く(未配置ならXではテキストのみになる)。 -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="NeoKura — 冷蔵庫の在庫・賞味期限管理" />
+    <meta property="og:title" content="NeoKura — 冷蔵庫の在庫・賞味期限管理アプリ" />
     <meta
       property="og:description"
-      content="家の蔵に、電気を通す。1182品目がドット絵のタイル。期限が近いものは明滅して知らせます。"
+      content="冷蔵庫に何があるか、ぜんぶ覚えているアプリ。品目はドット絵、期限が近いと光って知らせます。"
     />
     <meta property="og:url" content="https://yoooooui.github.io/neokura-support/" />
     <meta property="og:image" content="https://yoooooui.github.io/neokura-support/assets/ogp.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
+    <script>
+      document.documentElement.classList.add('js');
+    </script>
+
     <style>
-      /* ── トークン ───────────────────────────────────────────────
-       * 色は #05060B に対する実測コントラストを併記してある。
-       * 4.5:1 未満の色を本文・リンクに使わないこと(案の時点で mute 4.33 /
-       * 脚注 1.97 だった。脚注にはリンクが入るので致命的だった)。 */
       :root {
-        --void: #05060b; /* 背景 */
-        --line: #22303d; /* 罫線。テキストではないので 3:1 未満でも可 */
-        --cyan: #22e8ff; /* 13.6:1 */
-        --magenta: #ff2e94; /* 5.9:1 */
-        --paper: #d8eef6; /* 16.9:1 本文 */
-        --sub: #9fb6c0; /* 9.6:1 補足 */
-        --mute: #7592a0; /* 6.2:1 ラベル・脚注。案の #5E7884(4.33) から上げた */
+        --void: #080a0d;
+        --void-deep: #040507;
+        --surface: #10151a;
+        --surface-2: #151b21;
+        --surface-3: #1b222a;
+        --line: #2b343d;
+        --line-soft: rgba(151, 170, 184, 0.16);
+        --text: #f1f4e8;
+        --text-soft: #b6c0c9;
+        --muted: #91a0ac;
+        --accent: #f2f43a;
+        --cyan: #00e5ff;
+        --pink: #ff3e92;
+        --danger: #ff3b57;
+        --success: #00e6a8;
+        --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', 'Yu Gothic', sans-serif;
+        --max: 1180px;
+        --radius: 22px;
       }
-      * {
-        margin: 0;
-        padding: 0;
+
+      *,
+      *::before,
+      *::after {
         box-sizing: border-box;
       }
+
       html {
+        scroll-behavior: smooth;
         -webkit-text-size-adjust: 100%;
       }
+
       body {
-        background: var(--void);
-        color: var(--paper);
-        font-family: 'SF Mono', ui-monospace, Menlo, 'Hiragino Sans', monospace;
-        font-size: 14px;
-        line-height: 2.1;
-        padding: 48px 20px 96px;
-        max-width: 680px;
-        margin: 0 auto;
-      }
-      .jp {
-        font-family: 'Hiragino Sans', 'Noto Sans JP', system-ui, sans-serif;
-        font-weight: 300;
-      }
-      a {
-        color: var(--cyan);
-      }
-
-      header {
-        border-bottom: 1px solid var(--line);
-        padding-bottom: 26px;
-        margin-bottom: 36px;
-      }
-      /* 狭い画面では折り返して「OS」だけが次行に落ちる。縦に積んで避ける。 */
-      .id {
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        font-size: 11px;
-        color: var(--mute);
-        letter-spacing: 0.14em;
-        margin-bottom: 18px;
-        line-height: 1.8;
-      }
-      @media (min-width: 480px) {
-        .id {
-          flex-direction: row;
-          justify-content: space-between;
-          gap: 12px;
-        }
-      }
-      /* ── ネオン ────────────────────────────────────────────────
-       * 光り方は2種類しかない。
-       *   .lit    静かに滲む(常時)。文字色は変えないのでコントラストは落ちない
-       *   flicker 切れかけ(明滅)。**要素ごとに周期と遅延をずらす** ——
-       *           同期して点滅すると通りではなくストロボになる。発作の危険も上がる
-       * 明滅の間隔はどれも3秒以上。1秒に3回以上の点滅(WCAG 2.3.1 の閾値)には
-       * どう重なっても届かない。 */
-      .lit {
-        text-shadow:
-          0 0 6px rgba(34, 232, 255, 0.55),
-          0 0 18px rgba(34, 232, 255, 0.25);
-      }
-      .lit-pink {
-        text-shadow:
-          0 0 6px rgba(255, 46, 148, 0.5),
-          0 0 18px rgba(255, 46, 148, 0.2);
-      }
-
-      h1 {
-        font-size: 26px;
-        font-weight: 500;
-        letter-spacing: 0.3em;
-        color: #fff;
-        text-shadow:
-          0 0 8px rgba(34, 232, 255, 0.6),
-          0 0 26px rgba(34, 232, 255, 0.3),
-          0 0 48px rgba(34, 232, 255, 0.12);
-        animation: sign 7s ease-in-out infinite;
-      }
-      /* 看板の本体。長い周期でゆっくり息をする。切れかけてはいない。 */
-      @keyframes sign {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        47% {
-          opacity: 1;
-        }
-        49% {
-          opacity: 0.72;
-        }
-        51% {
-          opacity: 1;
-        }
-      }
-      .thesis {
-        font-size: 19px;
-        letter-spacing: 0.08em;
-        margin-top: 14px;
-      }
-      .thesis em {
-        font-style: normal;
-        color: var(--cyan);
-        text-shadow: 0 0 10px rgba(34, 232, 255, 0.5);
-      }
-
-      .top-cta {
-        margin-top: 20px;
-        font-size: 13px;
-        letter-spacing: 0.08em;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 4px 14px;
-      }
-      .top-cta a {
-        text-decoration: none;
-        border-bottom: 1px solid currentColor;
-        padding-bottom: 2px;
-      }
-      .top-cta span {
-        color: var(--mute);
-        font-size: 12px;
-      }
-
-      /* ヒーロー直下の無音ループ。このアプリの核は「光ること」で、
-         静止画では伝わらない。9秒 / 68KB / 音声トラック無し。
-         **prefers-reduced-motion では止める** —— CSSでは動画を止められないので、
-         ページ末尾の4行のスクリプトで pause している(このページで唯一のJS)。 */
-      .loop {
-        margin: 30px 0 0;
-        display: flex;
-        justify-content: center;
-      }
-      .loop video {
-        width: 220px;
-        max-width: 58vw;
-        height: auto;
-        display: block;
-        border: 1px solid var(--line);
-        box-shadow: 0 0 30px rgba(34, 232, 255, 0.12);
-      }
-      .loop-cap {
-        margin-top: 10px;
-        font-size: 11px;
-        color: var(--mute);
-        letter-spacing: 0.1em;
-        text-align: center;
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 34px 0;
-      }
-      td {
-        border: 1px solid var(--line);
-        padding: 12px 14px;
-        vertical-align: top;
-        font-size: 13px;
-      }
-      td:first-child {
-        width: 34%;
-        color: var(--mute);
-        letter-spacing: 0.1em;
-        white-space: nowrap;
-      }
-      .kill {
-        color: var(--magenta);
-        text-shadow:
-          0 0 6px rgba(255, 46, 148, 0.5),
-          0 0 18px rgba(255, 46, 148, 0.2);
-      }
-
-      /* ── 唯一の動き ──────────────────────────────────────────
-       * 案Bの肝は「1ページに光るのは1箇所だけ」。抑制が効いているぶん強く見える。
-       * ここを増やした瞬間にこのデザインは死ぬ。 */
-      tr.glow td {
-        border-color: #0e5c6b;
-      }
-      tr.glow td:last-child {
-        color: var(--cyan);
-        text-shadow: 0 0 9px rgba(34, 232, 255, 0.45);
-        animation: pulse 3.6s ease-in-out infinite;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        12% {
-          opacity: 0.45;
-        }
-        15% {
-          opacity: 1;
-        }
-        55% {
-          opacity: 0.9;
-        }
-        58% {
-          opacity: 0.55;
-        }
-        61% {
-          opacity: 1;
-        }
-      }
-
-      .rule {
-        color: var(--cyan);
-        margin: 44px 0 22px;
-        font-size: 12px;
-        letter-spacing: 0.06em;
-        overflow: hidden;
-        white-space: nowrap;
-        text-shadow:
-          0 0 5px rgba(34, 232, 255, 0.45),
-          0 0 16px rgba(34, 232, 255, 0.18);
-      }
-      /* 通りの看板。**1本ずつ固有の周期と遅延**を持たせる。
-         nth-of-type は他の <p>(キャプション等)も数えてしまい、
-         4本が完全に同期して点滅していた —— 通りではなくストロボになる。
-         値は各 .rule のインライン --d / --dur で指定する。 */
-      .rule {
-        animation: sputter var(--dur, 9s) ease-in-out var(--d, 0s) infinite;
-      }
-      @keyframes sputter {
-        0%,
-        100% {
-          opacity: 1;
-        }
-        28% {
-          opacity: 1;
-        }
-        30% {
-          opacity: 0.42;
-        }
-        32% {
-          opacity: 1;
-        }
-        66% {
-          opacity: 0.88;
-        }
-        68% {
-          opacity: 1;
-        }
-      }
-
-      ol {
-        list-style: none;
-        counter-reset: n;
-      }
-      ol li {
-        counter-increment: n;
-        padding: 20px 0;
-        border-bottom: 1px solid var(--line);
-        display: flex;
-        gap: 18px;
-      }
-      ol li::before {
-        content: counter(n, decimal-leading-zero);
-        color: var(--mute);
-        font-size: 12px;
-        letter-spacing: 0.1em;
-        padding-top: 6px;
-      }
-      ol li h2 {
+        margin: 0;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 82% 5%, rgba(0, 229, 255, 0.1), transparent 28rem),
+          radial-gradient(circle at 10% 34%, rgba(255, 62, 146, 0.06), transparent 30rem),
+          linear-gradient(180deg, #0a0d11 0%, var(--void) 34%, var(--void-deep) 100%);
+        color: var(--text);
+        font-family: var(--sans);
         font-size: 16px;
-        font-weight: 500;
-        letter-spacing: 0.12em;
-        margin-bottom: 4px;
-        line-height: 1.7;
-        /* 白いまま滲ませる。色を変えないのでコントラストは 16.9:1 のまま。 */
-        text-shadow:
-          0 0 7px rgba(216, 238, 246, 0.28),
-          0 0 20px rgba(34, 232, 255, 0.14);
-      }
-      ol li p {
-        font-size: 13px;
-        color: var(--sub);
-      }
-      .pro {
-        color: var(--magenta);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        border: 1px solid var(--magenta);
-        padding: 1px 6px;
-        margin-left: 8px;
-        white-space: nowrap;
+        line-height: 1.75;
+        text-rendering: optimizeLegibility;
       }
 
-      /* ドット絵の壁。「1,182品目ぜんぶドット絵」は文字より現物を見せた方が早い。
-         上下をフェードさせて、まだ続いている感じを出す。 */
-      .wall {
-        margin: 26px 0 0;
-        border: 1px solid var(--line);
-        overflow: hidden;
-        position: relative;
-      }
-      .wall img {
-        width: 100%;
-        height: auto;
-        display: block;
-        image-rendering: pixelated; /* ドット絵を滑らかに補間させない */
-      }
-      .wall::after {
+      body::before {
         content: '';
-        position: absolute;
+        position: fixed;
         inset: 0;
+        z-index: -1;
         pointer-events: none;
-        background: linear-gradient(
-          to bottom,
-          rgba(5, 6, 11, 0.55) 0%,
-          rgba(5, 6, 11, 0) 22%,
-          rgba(5, 6, 11, 0) 78%,
-          rgba(5, 6, 11, 0.85) 100%
-        );
-      }
-      .wall-cap {
-        margin-top: 8px;
-        font-size: 11px;
-        color: var(--mute);
-        letter-spacing: 0.1em;
+        opacity: 0.22;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+        background-size: 48px 48px;
+        -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 72%);
+        mask-image: linear-gradient(to bottom, black 0%, transparent 72%);
       }
 
-      /* 区切りにシアンの細い光を1本通す。文字は光らせない(本文の可読性を守る)。 */
-      .rule {
-        position: relative;
+      img,
+      video {
+        display: block;
+        max-width: 100%;
       }
-      .rule::after {
+
+      a {
+        color: inherit;
+      }
+
+      button,
+      summary {
+        font: inherit;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 100;
+        transform: translateY(-160%);
+        padding: 10px 14px;
+        background: var(--text);
+        color: var(--void);
+        border-radius: 8px;
+      }
+
+      .skip-link:focus {
+        transform: translateY(0);
+      }
+
+      .shell {
+        width: min(calc(100% - 40px), var(--max));
+        margin-inline: auto;
+      }
+
+      .mono {
+        font-family: var(--mono);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        margin: 0 0 18px;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+
+      .eyebrow::before {
+        content: '';
+        width: 28px;
+        height: 2px;
+        background: var(--cyan);
+        box-shadow: 0 0 12px rgba(0, 229, 255, 0.7);
+      }
+
+      .section-head {
+        max-width: 760px;
+        margin-bottom: 44px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        max-width: 740px;
+        font-size: clamp(32px, 5vw, 62px);
+        line-height: 1.15;
+        letter-spacing: -0.045em;
+      }
+
+      .section-head p:last-child {
+        max-width: 650px;
+        margin: 22px 0 0;
+        color: var(--text-soft);
+        font-size: clamp(16px, 2vw, 19px);
+      }
+
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        border-bottom: 1px solid transparent;
+        background: rgba(8, 10, 13, 0.76);
+        backdrop-filter: blur(18px) saturate(130%);
+        -webkit-backdrop-filter: blur(18px) saturate(130%);
+        transition:
+          border-color 180ms ease,
+          background 180ms ease;
+      }
+
+      .nav.is-scrolled {
+        border-color: var(--line-soft);
+        background: rgba(8, 10, 13, 0.92);
+      }
+
+      .nav-inner {
+        display: flex;
+        min-height: 70px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        position: relative;
+        width: 25px;
+        height: 25px;
+        background: var(--accent);
+        clip-path: polygon(0 0, 100% 0, 100% 65%, 65% 100%, 0 100%);
+        box-shadow: 0 0 22px rgba(242, 244, 58, 0.38);
+      }
+
+      .brand-mark::after {
         content: '';
         position: absolute;
-        left: 0;
-        right: 0;
-        /* .rule は overflow:hidden(長い罫線を切るため)。外に出すと消えるので内側に置く。 */
-        bottom: 3px;
-        height: 1px;
-        background: linear-gradient(
-          to right,
-          rgba(34, 232, 255, 0) 0%,
-          rgba(34, 232, 255, 0.45) 50%,
-          rgba(34, 232, 255, 0) 100%
-        );
+        inset: 6px;
+        background: var(--void);
+        clip-path: inherit;
       }
 
-      .shots {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        margin: 30px 0 0;
-      }
-      .shots img {
-        width: 100%;
-        height: auto;
-        border: 1px solid var(--line);
-        display: block;
-      }
-      @media (min-width: 600px) {
-        .shots {
-          grid-template-columns: repeat(3, 1fr);
-        }
+      .brand-word {
+        font-family: var(--mono);
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
       }
 
-      dl.faq dt {
-        font-size: 14px;
-        margin-top: 22px;
-        letter-spacing: 0.06em;
-        text-shadow: 0 0 6px rgba(216, 238, 246, 0.22);
-      }
-      dl.faq dd {
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+        color: var(--text-soft);
         font-size: 13px;
-        color: var(--sub);
-        margin-top: 4px;
       }
 
-      /* CTA。Apple公式バッジを assets/ に置いたら .cta を差し替える(下の注記)。 */
-      .cta-wrap {
-        text-align: center;
-        margin: 56px 0 0;
+      .nav-links a {
+        text-decoration: none;
       }
-      /* バッジは加工しない(枠・影・色替えを載せない)のがガイドライン。
-         リンク側にも余計な装飾を付けず、フォーカスリングだけ足す。 */
-      .cta {
+
+      .nav-links a:hover,
+      .nav-links a:focus-visible {
+        color: var(--text);
+      }
+
+      .nav-cta {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        padding: 0 17px;
+        border: 1px solid rgba(242, 244, 58, 0.6);
+        background: rgba(242, 244, 58, 0.08);
+        color: var(--accent) !important;
+        font-family: var(--mono);
+        font-weight: 700;
+        clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+      }
+
+      .hero {
+        position: relative;
+        min-height: 840px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr);
+        align-items: center;
+        gap: clamp(36px, 6vw, 92px);
+        padding-block: 70px 96px;
+      }
+
+      .hero-copy {
+        position: relative;
+        z-index: 2;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-size: clamp(48px, 7.2vw, 92px);
+        line-height: 1.03;
+        letter-spacing: -0.065em;
+      }
+
+      .hero h1 .signal {
+        display: block;
+        margin-top: 10px;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(241, 244, 232, 0.82);
+      }
+
+      .hero-lead {
+        max-width: 650px;
+        margin: 30px 0 0;
+        color: var(--text-soft);
+        font-size: clamp(17px, 2vw, 21px);
+        line-height: 1.85;
+      }
+
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 34px;
+      }
+
+      .store-badge {
         display: inline-block;
         line-height: 0;
       }
-      .cta img {
-        width: 218px;
+
+      .store-badge img {
+        width: 196px;
         height: auto;
-        max-width: 70vw;
-      }
-      .cta:focus-visible {
-        outline: 2px solid var(--paper);
-        outline-offset: 3px;
-      }
-      .cta-note {
-        margin-top: 12px;
-        font-size: 12px;
-        color: var(--mute);
       }
 
-      footer {
-        margin-top: 56px;
-        padding-top: 22px;
-        border-top: 1px solid var(--line);
+      .store-badge:focus-visible,
+      .text-link:focus-visible,
+      .nav a:focus-visible,
+      summary:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 4px;
+      }
+
+      .text-link {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        gap: 10px;
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: 13px;
+        text-decoration: none;
+      }
+
+      .text-link::before {
+        content: '▶';
+        color: var(--cyan);
+        font-size: 11px;
+      }
+
+      .trust-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 34px;
+      }
+
+      .trust-row span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        background: rgba(16, 21, 26, 0.76);
+        color: var(--text-soft);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.05em;
+      }
+
+      .trust-row span::before {
+        content: '';
+        width: 5px;
+        height: 5px;
+        margin-right: 8px;
+        background: var(--success);
+        box-shadow: 0 0 9px rgba(0, 230, 168, 0.72);
+      }
+
+      .hero-visual {
+        position: relative;
+        min-height: 640px;
+        display: grid;
+        place-items: center;
+        isolation: isolate;
+      }
+
+      .hero-visual::before {
+        content: '';
+        position: absolute;
+        width: min(42vw, 520px);
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: rgba(0, 229, 255, 0.12);
+        filter: blur(72px);
+        z-index: -2;
+      }
+
+      .hero-visual::after {
+        content: '';
+        position: absolute;
+        bottom: 42px;
+        width: 88%;
+        height: 90px;
+        background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.2), transparent);
+        filter: blur(18px);
+        transform: perspective(260px) rotateX(62deg);
+        z-index: -1;
+      }
+
+      .device {
+        position: relative;
+        width: min(350px, 82vw);
+        padding: 10px;
+        border: 1px solid rgba(194, 217, 225, 0.36);
+        border-radius: 48px;
+        background: linear-gradient(145deg, #2a323a, #080a0d 30%, #161c22 78%, #313b44);
+        box-shadow:
+          0 44px 100px rgba(0, 0, 0, 0.72),
+          0 0 0 1px rgba(0, 229, 255, 0.08),
+          26px 26px 90px rgba(0, 229, 255, 0.1);
+        transform: perspective(1200px) rotateY(-8deg) rotateX(2deg);
+      }
+
+      .device::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        z-index: 3;
+        width: 32%;
+        height: 25px;
+        border-radius: 20px;
+        background: #050607;
+        transform: translateX(-50%);
+      }
+
+      .device-screen {
+        overflow: hidden;
+        border-radius: 39px;
+        background: #05060b;
+      }
+
+      .device video {
+        width: 100%;
+        height: auto;
+      }
+
+      .float-label {
+        position: absolute;
+        z-index: 4;
+        display: grid;
+        gap: 2px;
+        min-width: 158px;
+        padding: 11px 14px;
+        border: 1px solid rgba(0, 229, 255, 0.34);
+        background: rgba(8, 12, 16, 0.88);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.34);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+      }
+
+      .float-label strong {
+        font-family: var(--mono);
         font-size: 12px;
-        color: var(--mute);
+        color: var(--cyan);
+        letter-spacing: 0.06em;
+      }
+
+      .float-label span {
+        color: var(--text-soft);
+        font-size: 12px;
+      }
+
+      .float-label.top {
+        top: 90px;
+        right: -8px;
+      }
+
+      .float-label.bottom {
+        bottom: 112px;
+        left: -18px;
+        border-color: rgba(242, 244, 58, 0.34);
+      }
+
+      .float-label.bottom strong {
+        color: var(--accent);
+      }
+
+      .rail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 1px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--cyan) 18%,
+          rgba(0, 229, 255, 0.14) 64%,
+          transparent
+        );
+        box-shadow: 0 -1px 18px rgba(0, 229, 255, 0.32);
+      }
+
+      .metrics {
+        position: relative;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border: 1px solid var(--line-soft);
+        background: rgba(13, 17, 21, 0.88);
+        box-shadow: 0 26px 90px rgba(0, 0, 0, 0.32);
+        transform: translateY(-42px);
+      }
+
+      .metric {
+        min-height: 128px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 24px clamp(18px, 3vw, 34px);
+        border-right: 1px solid var(--line-soft);
+      }
+
+      .metric:last-child {
+        border-right: 0;
+      }
+
+      .metric strong {
+        color: var(--text);
+        font-family: var(--mono);
+        font-size: clamp(26px, 3vw, 38px);
+        line-height: 1;
+        letter-spacing: -0.045em;
+      }
+
+      .metric span {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      section {
+        padding-block: 112px;
+      }
+
+      .loop-section {
+        padding-top: 92px;
+      }
+
+      .loop-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        overflow: hidden;
+        border: 1px solid var(--line-soft);
+        background: var(--line-soft);
+      }
+
+      .loop-step {
+        position: relative;
+        min-height: 250px;
+        padding: 28px;
+        background: linear-gradient(150deg, rgba(23, 30, 36, 0.96), rgba(11, 14, 18, 0.98));
+      }
+
+      .loop-step::after {
+        content: '';
+        position: absolute;
+        top: 49px;
+        right: -11px;
+        z-index: 2;
+        width: 21px;
+        height: 21px;
+        border-top: 1px solid var(--cyan);
+        border-right: 1px solid var(--cyan);
+        transform: rotate(45deg);
+      }
+
+      .loop-step:last-child::after {
+        display: none;
+      }
+
+      .step-no {
+        display: block;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+      }
+
+      .loop-step h3 {
+        margin: 44px 0 0;
+        font-size: 25px;
+        letter-spacing: -0.035em;
+      }
+
+      .loop-step p {
+        margin: 12px 0 0;
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      .loop-return {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 18px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      .loop-return::before {
+        content: '';
+        width: min(220px, 30vw);
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--pink));
+      }
+
+      .bento {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 16px;
+      }
+
+      .card {
+        position: relative;
+        overflow: hidden;
+        min-height: 310px;
+        padding: clamp(24px, 3vw, 38px);
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: linear-gradient(145deg, rgba(23, 29, 35, 0.94), rgba(10, 13, 17, 0.96));
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 34px;
+        width: 72px;
+        height: 2px;
+        background: var(--cyan);
+        box-shadow: 0 0 14px rgba(0, 229, 255, 0.5);
+      }
+
+      .card h3 {
+        position: relative;
+        z-index: 2;
+        max-width: 470px;
+        margin: 0;
+        font-size: clamp(24px, 3vw, 38px);
+        line-height: 1.2;
+        letter-spacing: -0.04em;
+      }
+
+      .card p {
+        position: relative;
+        z-index: 2;
+        max-width: 490px;
+        margin: 14px 0 0;
+        color: var(--text-soft);
+        font-size: 15px;
+      }
+
+      .card-kicker {
+        display: block;
+        position: relative;
+        z-index: 2;
+        margin-bottom: 28px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.14em;
+      }
+
+      .catalog-card {
+        grid-column: span 7;
+        min-height: 500px;
+      }
+
+      .catalog-wall {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        opacity: 0.92;
+        image-rendering: pixelated;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+        mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+      }
+
+      .expiry-card {
+        grid-column: span 5;
+        min-height: 500px;
+      }
+
+      .expiry-ui {
+        position: absolute;
+        left: 34px;
+        right: 34px;
+        bottom: 34px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .expiry-row {
+        display: grid;
+        grid-template-columns: 42px 1fr auto;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border: 1px solid var(--line);
+        background: rgba(4, 6, 8, 0.64);
+      }
+
+      .pixel-box {
+        width: 42px;
+        height: 42px;
+        display: grid;
+        place-items: center;
+        background:
+          linear-gradient(90deg, transparent 33%, currentColor 33% 66%, transparent 66%) 0 0 / 100% 33%,
+          linear-gradient(90deg, currentColor 33%, transparent 33% 66%, currentColor 66%) 0 50% / 100% 33%,
+          linear-gradient(90deg, transparent 33%, currentColor 33% 66%, transparent 66%) 0 100% / 100% 33%;
+        color: var(--accent);
+        opacity: 0.85;
+      }
+
+      .expiry-row strong {
+        font-size: 13px;
+      }
+
+      .expiry-row span {
+        color: var(--danger);
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 700;
+      }
+
+      .expiry-row.urgent {
+        border-color: rgba(255, 59, 87, 0.58);
+        box-shadow:
+          inset 0 0 25px rgba(255, 59, 87, 0.05),
+          0 0 26px rgba(255, 59, 87, 0.08);
+      }
+
+      .recipe-card {
+        grid-column: span 8;
+        min-height: 390px;
+      }
+
+      .dish-wall {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        image-rendering: pixelated;
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 34%);
+        mask-image: linear-gradient(to bottom, transparent 0%, black 34%);
+      }
+
+      .offline-card {
+        grid-column: span 4;
+        min-height: 390px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .offline-card::before {
+        background: var(--accent);
+        box-shadow: 0 0 14px rgba(242, 244, 58, 0.44);
+      }
+
+      .offline-symbol {
+        width: 112px;
+        height: 112px;
+        display: grid;
+        place-items: center;
+        align-self: flex-end;
+        border: 1px solid rgba(242, 244, 58, 0.4);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: 34px;
+        clip-path: polygon(15% 0, 85% 0, 100% 15%, 100% 85%, 85% 100%, 15% 100%, 0 85%, 0 15%);
+        box-shadow: inset 0 0 30px rgba(242, 244, 58, 0.07);
+      }
+
+      .product-section {
+        position: relative;
+      }
+
+      .product-section::before {
+        content: '';
+        position: absolute;
+        inset: 5% 0 auto;
+        height: 55%;
+        pointer-events: none;
+        background: radial-gradient(circle at 50% 0, rgba(0, 229, 255, 0.075), transparent 55%);
+      }
+
+      .screen-stage {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(12px, 2.4vw, 28px);
+        align-items: start;
+        padding: clamp(20px, 5vw, 58px);
+        border: 1px solid var(--line-soft);
+        border-radius: 28px;
+        background: linear-gradient(180deg, rgba(21, 28, 34, 0.9), rgba(7, 9, 12, 0.96)), var(--surface);
+        box-shadow: 0 34px 90px rgba(0, 0, 0, 0.34);
+      }
+
+      .screen-stage::after {
+        content: '';
+        position: absolute;
+        left: 6%;
+        right: 6%;
+        bottom: -26px;
+        height: 32px;
+        background: linear-gradient(90deg, transparent, rgba(0, 229, 255, 0.16), transparent);
+        filter: blur(14px);
+      }
+
+      .screen-shot {
+        overflow: hidden;
+        border: 1px solid rgba(156, 176, 190, 0.28);
+        border-radius: 20px;
+        background: #05060b;
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.46);
+      }
+
+      .screen-shot:nth-child(2) {
+        margin-top: 54px;
+      }
+
+      .screen-shot img {
+        width: 100%;
+        height: auto;
+      }
+
+      .screen-copy {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: clamp(12px, 2.4vw, 28px);
+        margin-top: 24px;
+      }
+
+      .screen-copy article {
+        padding: 8px 4px;
+      }
+
+      .screen-copy strong {
+        display: block;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 11px;
         letter-spacing: 0.1em;
-        text-align: center;
-        line-height: 2.4;
       }
-      footer a {
-        color: var(--mute);
-        text-decoration: underline;
+
+      .screen-copy h3 {
+        margin: 8px 0 0;
+        font-size: 20px;
       }
-      footer a:hover,
-      footer a:focus-visible {
+
+      .screen-copy p {
+        margin: 8px 0 0;
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      .reason {
+        display: grid;
+        grid-template-columns: 0.85fr 1.15fr;
+        gap: clamp(44px, 8vw, 110px);
+        align-items: start;
+      }
+
+      .reason-title {
+        position: sticky;
+        top: 120px;
+      }
+
+      .reason-title h2 {
+        margin: 0;
+        font-size: clamp(36px, 5vw, 64px);
+        line-height: 1.08;
+        letter-spacing: -0.05em;
+      }
+
+      .reason-title p {
+        margin: 22px 0 0;
+        color: var(--text-soft);
+      }
+
+      .reason-list {
+        counter-reset: reason;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .reason-item {
+        counter-increment: reason;
+        position: relative;
+        padding: 34px 0 34px 72px;
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      .reason-item::before {
+        content: '0' counter(reason);
+        position: absolute;
+        top: 40px;
+        left: 0;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .reason-item h3 {
+        margin: 0;
+        font-size: 24px;
+        letter-spacing: -0.03em;
+      }
+
+      .reason-item p {
+        margin: 10px 0 0;
+        color: var(--text-soft);
+      }
+
+      .pricing-wrap {
+        display: grid;
+        grid-template-columns: 0.9fr 1.1fr;
+        gap: 18px;
+      }
+
+      .price-card {
+        position: relative;
+        min-height: 540px;
+        padding: clamp(28px, 4vw, 48px);
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius);
+        background: linear-gradient(145deg, rgba(21, 27, 33, 0.96), rgba(8, 10, 13, 0.98));
+      }
+
+      .price-card.pro {
+        overflow: hidden;
+        border-color: rgba(242, 244, 58, 0.48);
+        box-shadow:
+          inset 0 0 60px rgba(242, 244, 58, 0.025),
+          0 24px 70px rgba(0, 0, 0, 0.24);
+      }
+
+      .price-card.pro::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle at top right, rgba(242, 244, 58, 0.17), transparent 70%);
+      }
+
+      .plan-name {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 12px;
+        letter-spacing: 0.15em;
+      }
+
+      .price-card h3 {
+        margin: 18px 0 0;
+        font-size: clamp(28px, 3.8vw, 46px);
+        line-height: 1.15;
+        letter-spacing: -0.045em;
+      }
+
+      .price {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin: 30px 0 0;
+      }
+
+      .price strong {
+        font-family: var(--mono);
+        font-size: clamp(38px, 5vw, 58px);
+        line-height: 1;
+      }
+
+      .price span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .annual {
+        margin: 8px 0 0;
+        color: var(--text-soft);
+        font-size: 13px;
+      }
+
+      .trial {
+        display: inline-flex;
+        margin-top: 14px;
+        padding: 5px 9px;
+        background: var(--accent);
+        color: #171900;
+        font-family: var(--mono);
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      .feature-list {
+        display: grid;
+        gap: 13px;
+        margin: 34px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .feature-list li {
+        position: relative;
+        padding-left: 24px;
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      .feature-list li::before {
+        content: '＋';
+        position: absolute;
+        left: 0;
+        color: var(--cyan);
+        font-family: var(--mono);
+      }
+
+      .price-note {
+        margin-top: 22px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .faq-grid {
+        display: grid;
+        grid-template-columns: 0.65fr 1.35fr;
+        gap: clamp(40px, 8vw, 100px);
+      }
+
+      .faq-intro h2 {
+        margin: 0;
+        font-size: clamp(34px, 5vw, 60px);
+        line-height: 1.1;
+        letter-spacing: -0.05em;
+      }
+
+      .faq-intro p {
+        margin: 18px 0 0;
+        color: var(--text-soft);
+      }
+
+      .faq-list {
+        border-top: 1px solid var(--line-soft);
+      }
+
+      details {
+        border-bottom: 1px solid var(--line-soft);
+      }
+
+      summary {
+        position: relative;
+        padding: 24px 52px 24px 0;
+        cursor: pointer;
+        list-style: none;
+        font-weight: 700;
+      }
+
+      summary::-webkit-details-marker {
+        display: none;
+      }
+
+      summary::after {
+        content: '＋';
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 19px;
+        transform: translateY(-50%);
+      }
+
+      details[open] summary::after {
+        content: '−';
+      }
+
+      details p {
+        margin: -4px 0 26px;
+        padding-right: 40px;
+        color: var(--text-soft);
+        font-size: 14px;
+      }
+
+      details strong {
+        color: var(--text);
+      }
+
+      details a {
         color: var(--cyan);
       }
 
-      /* 光過敏性発作への配慮。ネオン明滅が売りである以上ここは絶対に外さない。 */
+      .final-cta {
+        position: relative;
+        overflow: hidden;
+        margin-top: 64px;
+        padding: clamp(54px, 8vw, 96px) clamp(26px, 7vw, 90px);
+        border: 1px solid rgba(0, 229, 255, 0.34);
+        border-radius: 28px;
+        background:
+          radial-gradient(circle at 85% 50%, rgba(0, 229, 255, 0.15), transparent 32%),
+          linear-gradient(135deg, #151c22, #080b0f 70%);
+        box-shadow:
+          inset 0 0 70px rgba(0, 229, 255, 0.035),
+          0 30px 80px rgba(0, 0, 0, 0.28);
+      }
+
+      .final-cta::after {
+        content: 'NEOKURA';
+        position: absolute;
+        right: -28px;
+        bottom: -56px;
+        color: transparent;
+        -webkit-text-stroke: 1px rgba(0, 229, 255, 0.11);
+        font-family: var(--mono);
+        font-size: clamp(90px, 17vw, 210px);
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: -0.08em;
+        pointer-events: none;
+      }
+
+      .final-cta h2 {
+        position: relative;
+        z-index: 2;
+        max-width: 660px;
+        margin: 0;
+        font-size: clamp(38px, 6vw, 72px);
+        line-height: 1.08;
+        letter-spacing: -0.055em;
+      }
+
+      .final-cta p {
+        position: relative;
+        z-index: 2;
+        max-width: 560px;
+        margin: 20px 0 0;
+        color: var(--text-soft);
+      }
+
+      .final-cta .store-badge {
+        position: relative;
+        z-index: 2;
+        margin-top: 30px;
+      }
+
+      .platform-note {
+        display: block;
+        position: relative;
+        z-index: 2;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      footer {
+        padding-block: 42px 56px;
+      }
+
+      .footer-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 28px;
+        padding-top: 28px;
+        border-top: 1px solid var(--line-soft);
+      }
+
+      .footer-brand {
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 18px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .footer-links a:hover,
+      .footer-links a:focus-visible {
+        color: var(--cyan);
+      }
+
+      .js .reveal {
+        opacity: 0;
+        transform: translateY(24px);
+        transition:
+          opacity 600ms ease,
+          transform 600ms cubic-bezier(0.2, 0.75, 0.2, 1);
+      }
+
+      .js .reveal.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 920px) {
+        .nav-links a:not(.nav-cta) {
+          display: none;
+        }
+
+        .hero {
+          min-height: auto;
+          grid-template-columns: 1fr;
+          padding-block: 72px 82px;
+        }
+
+        .hero-copy {
+          max-width: 740px;
+        }
+
+        .hero-visual {
+          min-height: 620px;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .metric:nth-child(2) {
+          border-right: 0;
+        }
+
+        .metric:nth-child(-n + 2) {
+          border-bottom: 1px solid var(--line-soft);
+        }
+
+        .loop-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .loop-step:nth-child(2)::after {
+          display: none;
+        }
+
+        .loop-step:nth-child(-n + 2) {
+          border-bottom: 1px solid var(--line-soft);
+        }
+
+        .catalog-card,
+        .expiry-card,
+        .recipe-card,
+        .offline-card {
+          grid-column: span 12;
+        }
+
+        .reason,
+        .faq-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .reason-title {
+          position: static;
+        }
+      }
+
+      @media (max-width: 680px) {
+        .shell {
+          width: min(calc(100% - 28px), var(--max));
+        }
+
+        .nav-inner {
+          min-height: 62px;
+        }
+
+        .nav-cta {
+          min-height: 38px;
+          padding-inline: 12px;
+          font-size: 11px;
+        }
+
+        .hero {
+          padding-top: 58px;
+        }
+
+        .hero h1 {
+          font-size: clamp(45px, 14vw, 66px);
+        }
+
+        .hero-lead {
+          font-size: 16px;
+        }
+
+        .hero-visual {
+          min-height: 570px;
+        }
+
+        .device {
+          width: min(310px, 84vw);
+          border-radius: 42px;
+        }
+
+        .device-screen {
+          border-radius: 34px;
+        }
+
+        .float-label {
+          min-width: 138px;
+          padding: 9px 11px;
+        }
+
+        .float-label.top {
+          right: -4px;
+        }
+
+        .float-label.bottom {
+          left: -4px;
+        }
+
+        .metrics {
+          transform: translateY(-26px);
+        }
+
+        .metric {
+          min-height: 108px;
+          padding: 20px;
+        }
+
+        section {
+          padding-block: 82px;
+        }
+
+        .loop-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .loop-step {
+          min-height: 210px;
+        }
+
+        .loop-step::after,
+        .loop-step:nth-child(2)::after {
+          display: block;
+          top: auto;
+          right: 34px;
+          bottom: -10px;
+          transform: rotate(135deg);
+        }
+
+        .loop-step:last-child::after {
+          display: none;
+        }
+
+        .loop-step:nth-child(-n + 3) {
+          border-bottom: 1px solid var(--line-soft);
+        }
+
+        .card,
+        .catalog-card,
+        .expiry-card,
+        .recipe-card,
+        .offline-card {
+          min-height: 420px;
+        }
+
+        .expiry-ui {
+          left: 20px;
+          right: 20px;
+          bottom: 20px;
+        }
+
+        .screen-stage {
+          grid-template-columns: repeat(3, minmax(190px, 1fr));
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding-bottom: 32px;
+        }
+
+        .screen-shot {
+          scroll-snap-align: center;
+        }
+
+        .screen-shot:nth-child(2) {
+          margin-top: 0;
+        }
+
+        .screen-copy {
+          grid-template-columns: 1fr;
+        }
+
+        .pricing-wrap {
+          grid-template-columns: 1fr;
+        }
+
+        .price-card {
+          min-height: auto;
+        }
+
+        .footer-inner {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .footer-links {
+          justify-content: flex-start;
+        }
+      }
+
       @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+
         *,
         *::before,
         *::after {
           animation: none !important;
           transition: none !important;
         }
+
+        .reveal {
+          opacity: 1;
+          transform: none;
+        }
       }
     </style>
   </head>
 
   <body>
-    <header>
-      <div class="id"><span>NEOKURA / HOME INVENTORY OS</span><span>v1.2 — iOS 16.4+</span></div>
-      <h1>NEOKURA</h1>
-      <p class="thesis jp">家の蔵に、<em>電気</em>を通す。</p>
+    <a class="skip-link" href="#main">本文へ移動</a>
 
-      <!-- ファーストビューのCTA。X から来た人の滞在は10秒程度で、
-           ページ末尾のCTAまでは届かない。仕様書の体裁を崩さないよう
-           罫線1本ぶんの控えめな行にしてある。 -->
-      <p class="top-cta">
-        <a href="https://apps.apple.com/jp/app/id6795165520">▸ App Store で入手</a>
-        <span class="jp">無料 ・ iOS 16.4以降</span>
-      </p>
-    </header>
+    <nav class="nav" aria-label="メインナビゲーション">
+      <div class="shell nav-inner">
+        <a class="brand" href="#top" aria-label="NeoKura トップへ">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-word">NEOKURA</span>
+        </a>
+        <div class="nav-links">
+          <a href="#loop">しくみ</a>
+          <a href="#features">できること</a>
+          <a href="#screens">画面</a>
+          <a href="#pricing">料金</a>
+          <a class="nav-cta" href="https://apps.apple.com/jp/app/id6795165520">APP STORE ↗</a>
+        </div>
+      </div>
+    </nav>
 
-    <div class="loop">
-      <video
-        src="assets/loop.mp4"
-        poster="assets/loop-poster.webp"
-        width="440"
-        height="954"
-        autoplay
-        loop
-        muted
-        playsinline
-        preload="none"
-        aria-label="品目のドット絵タイルを押すたびに、枠がシアンのネオンで点灯していく様子"
-      ></video>
-    </div>
-    <p class="loop-cap jp">押すと点く。9秒・音は出ません。</p>
+    <main id="main">
+      <header class="shell hero" id="top">
+        <div class="hero-copy">
+          <p class="eyebrow">HOME INVENTORY / iOS</p>
+          <h1>
+            冷蔵庫に何があるか、<br />ぜんぶ覚えているアプリ。
+            <span class="signal">期限が近いと、光る。</span>
+          </h1>
+          <p class="hero-lead">
+            冷蔵庫の奥で、また何かが使えなくなっていた。その繰り返しを終わらせたくて作った、家庭用の在庫アプリです。品目はぜんぶドット絵で、買い物も、しまうのも、ほとんど文字を打たずに済みます。
+          </p>
+          <div class="hero-actions">
+            <a class="store-badge" href="https://apps.apple.com/jp/app/id6795165520">
+              <img src="assets/appstore-badge.svg" width="218" height="80" alt="App Storeからダウンロード" />
+            </a>
+            <a class="text-link" href="#preview">9秒で見る</a>
+          </div>
+          <div class="trust-row" aria-label="アプリの特徴">
+            <span>アカウント不要</span>
+            <span>圏外でも動く</span>
+            <span>ほぼ全機能が無料</span>
+          </div>
+        </div>
 
-    <table class="jp">
-      <tr>
-        <td>名称</td>
-        <td>NeoKura ＝ ネオ蔵 × ネオクラウド × ネオン</td>
-      </tr>
-      <tr>
-        <td>管理対象</td>
-        <td>冷蔵庫 / 冷凍庫 / パントリー / 倉庫 / 防災備蓄 / 家電の保証</td>
-      </tr>
-      <tr>
-        <td>品目カタログ</td>
-        <td><b class="lit">1,182 種</b>（すべてドット絵。名前を打たずに押すだけ）</td>
-      </tr>
-      <tr>
-        <td>レシピ</td>
-        <td><b class="lit">520 品</b>（家にある材料で作れる順に並ぶ）</td>
-      </tr>
-      <tr class="glow">
-        <td>期限警告</td>
-        <td>切れかけのネオン看板のように、明滅して知らせる</td>
-      </tr>
-      <tr>
-        <td>通信</td>
-        <td><b class="lit">アカウント不要。</b>ネットを切っても全機能が動く</td>
-      </tr>
-      <tr>
-        <td>無料の範囲</td>
-        <td>品目200・保管場所3つまで。<b class="lit">機能の制限はありません</b></td>
-      </tr>
-      <tr>
-        <td>価格</td>
-        <td>
-          <b class="lit">無料</b>（NeoKura Pro：月額 ¥400 / 年額 ¥3,000・<b class="lit-pink">14日間無料</b>）
-        </td>
-      </tr>
-      <tr>
-        <td>非対応</td>
-        <td class="kill">家庭以外の在庫管理。<span class="jp">それでいい。</span></td>
-      </tr>
-    </table>
+        <div class="hero-visual" id="preview">
+          <div class="device">
+            <div class="device-screen">
+              <video
+                src="assets/loop.mp4"
+                poster="assets/loop-poster.webp"
+                width="440"
+                height="954"
+                autoplay
+                loop
+                muted
+                playsinline
+                preload="metadata"
+                aria-label="NeoKuraでドット絵の品目を選び、在庫を動かす操作デモ"
+              ></video>
+            </div>
+          </div>
+          <div class="float-label top" aria-hidden="true">
+            <strong>STOCK / ONLINE</strong>
+            <span>外から中身が見える</span>
+          </div>
+          <div class="float-label bottom" aria-hidden="true">
+            <strong>TAP → STOW</strong>
+            <span>押すだけでしまえる</span>
+          </div>
+        </div>
+        <div class="rail" aria-hidden="true"></div>
+      </header>
 
-    <div class="wall">
-      <img
-        src="assets/wall-items.webp"
-        width="768"
-        height="384"
-        alt="食材や日用品のドット絵が12×6のタイルで並んでいる様子"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-    <p class="wall-cap jp"><b class="lit">1,182品目</b>のうち72点。名前を打たずに、押すだけ。</p>
+      <div class="shell metrics reveal" aria-label="NeoKuraの収録内容">
+        <div class="metric"><strong>1,182</strong><span>ドット絵で選べる品目</span></div>
+        <div class="metric"><strong>520</strong><span>家にあるもので探せるレシピ</span></div>
+        <div class="metric"><strong>3 TAP</strong><span>毎日の操作はこれで足りる</span></div>
+        <div class="metric"><strong>0</strong><span>アカウント登録・広告</span></div>
+      </div>
 
-    <p class="rule" style="--dur: 8.3s; --d: 0s">────────────── OPERATION ──────────────</p>
-
-    <ol class="jp">
-      <li>
-        <div>
-          <h2>買って、しまう。動作はひとつ。</h2>
+      <section class="shell loop-section" id="loop">
+        <div class="section-head reveal">
+          <p class="eyebrow">The home loop</p>
+          <h2>買って、しまって、使って、また買う。</h2>
           <p>
-            タイルを押すとリストに入る。店では売り場順に並ぶ。帰ったら「しまう」を押す。置き場所は前回のまま。ここまで、文字はひとつも打っていない。
+            買い物リストで終わりません。買った物は帰宅後の「しまう」に並び、使えば在庫が減って、残った食材から次の献立が出てきます。それでまた買い物リストに戻ってくる、という一周です。
           </p>
         </div>
-      </li>
-      <li>
-        <div>
-          <h2>何がどこに、いつからあるか。</h2>
+        <div class="loop-grid reveal">
+          <article class="loop-step">
+            <span class="step-no">01 / PICK</span>
+            <h3>買う</h3>
+            <p>絵を押すとリストに入ります。店に着くと売り場の順に並び替わります。</p>
+          </article>
+          <article class="loop-step">
+            <span class="step-no">02 / STOW</span>
+            <h3>しまう</h3>
+            <p>帰ったら右にスワイプするだけ。置き場所は前回と同じ所に入ります。</p>
+          </article>
+          <article class="loop-step">
+            <span class="step-no">03 / TRACK</span>
+            <h3>わかる</h3>
+            <p>何がどこに、いつからあるか。売り場からでも3秒で確かめられます。</p>
+          </article>
+          <article class="loop-step">
+            <span class="step-no">04 / COOK</span>
+            <h3>つくる</h3>
+            <p>家にある材料で作れる順に並びます。「作った」を押すと材料も減ります。</p>
+          </article>
+        </div>
+        <p class="loop-return">USE → NEXT PICK → LOOP</p>
+      </section>
+
+      <section class="shell" id="features">
+        <div class="section-head reveal">
+          <p class="eyebrow">LESS TYPING</p>
+          <h2>続かない原因は、入力の多さでした。</h2>
           <p>
-            冷蔵庫も冷凍庫も棚も、何がいくつあるか一目で分かる。買う前に「家にある」と出る。マヨネーズの3本目を買わずに済む。冷凍庫の奥の化石も見つかる。
+            買い物袋を提げて帰ってきて「鶏もも肉・300g・金曜まで」と打ち込むのは、自分でも二週目に挫折しました。だから入力そのものを減らしてあります。押す、スワイプする、でほぼ全部が終わります。
           </p>
         </div>
-      </li>
-      <li>
-        <div>
-          <h2>期限が近いものは、明滅する。</h2>
+
+        <div class="bento">
+          <article class="card catalog-card reveal">
+            <span class="card-kicker">PIXEL CATALOG / 1,182 ITEMS</span>
+            <h3>名前を打たない買い物リスト</h3>
+            <p>
+              野菜も調味料も日用品も、ぜんぶ絵のタイルです。検索は「なす」「ナス」「茄子」のどれでも当たりますが、そもそも打つ場面があまりありません。
+            </p>
+            <img
+              class="catalog-wall"
+              src="assets/wall-items.webp"
+              width="768"
+              height="384"
+              alt="食材や日用品のドット絵タイル72点"
+              loading="lazy"
+              decoding="async"
+            />
+          </article>
+
+          <article class="card expiry-card reveal">
+            <span class="card-kicker">EXPIRY SIGNAL</span>
+            <h3>期限が近いものは、光る。</h3>
+            <p>
+              赤字で「あと2日」と書いてあっても、正直読み飛ばします。光っていれば、見るつもりがなくても目に入ります。
+            </p>
+            <div class="expiry-ui" aria-hidden="true">
+              <div class="expiry-row">
+                <span class="pixel-box"></span><strong>ヨーグルト</strong><span>あと5日</span>
+              </div>
+              <div class="expiry-row urgent">
+                <span class="pixel-box"></span><strong>鶏むね肉</strong><span>明日まで</span>
+              </div>
+              <div class="expiry-row">
+                <span class="pixel-box"></span><strong>大葉</strong><span>あと3日</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="card recipe-card reveal">
+            <span class="card-kicker">RECIPE MATCH / 520 DISHES</span>
+            <h3>今夜の一品は、たぶんもう家にある。</h3>
+            <p>
+              家にある材料で作れる順にレシピが並びます。期限が近い食材を使う料理は前のほうへ。足りない材料はその場で買い物リストに送れます。
+            </p>
+            <img
+              class="dish-wall"
+              src="assets/wall-dishes.webp"
+              width="768"
+              height="192"
+              alt="料理の完成イメージを表すドット絵36点"
+              loading="lazy"
+              decoding="async"
+            />
+          </article>
+
+          <article class="card offline-card reveal">
+            <div>
+              <span class="card-kicker">LOCAL FIRST</span>
+              <h3>圏外の台所でも、ふつうに動く。</h3>
+              <p>
+                アカウント登録はありません。データは端末の中に保存されて、機内モードでも一通り使えます。通信が要るのは家族共有だけです。
+              </p>
+            </div>
+            <span class="offline-symbol" aria-hidden="true">LOCAL</span>
+          </article>
+        </div>
+      </section>
+
+      <section class="product-section" id="screens">
+        <div class="shell">
+          <div class="section-head reveal">
+            <p class="eyebrow">Inside the warehouse</p>
+            <h2>画面は、こんな感じです。</h2>
+            <p>
+              夜の倉庫街、という見た目で作っています。ただし光るのは飾りではなく、期限が近い・しまい忘れている、といった様子のおかしい場所だけです。
+            </p>
+          </div>
+
+          <div class="screen-stage reveal" aria-label="NeoKuraのアプリ画面">
+            <div class="screen-shot">
+              <img
+                src="assets/screens/01-home.webp"
+                width="540"
+                height="1170"
+                alt="今日やることと倉庫マップを表示するホーム画面"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="screen-shot">
+              <img
+                src="assets/screens/05-shopping.webp"
+                width="540"
+                height="1170"
+                alt="買う、買った、しまうがつながる買い物画面"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="screen-shot">
+              <img
+                src="assets/screens/02-cook.webp"
+                width="540"
+                height="1170"
+                alt="在庫で作れる順に料理が並ぶレシピ画面"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          </div>
+          <div class="screen-copy reveal">
+            <article>
+              <strong>01 / WAREHOUSE</strong>
+              <h3>開くと、今日やることが出ている</h3>
+              <p>期限が近い・切らしている・しまい忘れている、の中で一番急ぐものが上に来ます。</p>
+            </article>
+            <article>
+              <strong>02 / SHOPPING</strong>
+              <h3>「買った」で終わらせない</h3>
+              <p>会計を済ませたら「買った」を押すだけ。家に着くと、そのぶんが「しまう」に並んでいます。</p>
+            </article>
+            <article>
+              <strong>03 / COOK</strong>
+              <h3>冷蔵庫を開ける前に、夕飯が決まる</h3>
+              <p>作れる料理と、先に使ったほうがいい食材が同時に見えます。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell">
+        <div class="reason">
+          <div class="reason-title reveal">
+            <p class="eyebrow">DESIGN NOTES</p>
+            <h2>この見た目でやっている理由</h2>
+            <p>ネオンもドット絵も、飾りで選んだわけではありません。ひとつずつ役目があります。</p>
+          </div>
+          <div class="reason-list reveal">
+            <article class="reason-item">
+              <h3>ドット絵なのは、探させないため</h3>
+              <p>
+                1,182品目を文字のリストで出されたら、たぶん誰も探しません。絵なら目が勝手に見つけてくれます。小さくても潰れない絵を、と考えるとドット絵しかなくて、気づいたら1,723枚描いていました。
+              </p>
+            </article>
+            <article class="reason-item">
+              <h3>ネオンなのは、読ませないため</h3>
+              <p>
+                「あと2日」の文字は読まないと伝わりませんが、切れかけの光は読まなくても伝わります。光るのは様子のおかしいものだけ、と決めています。
+              </p>
+            </article>
+            <article class="reason-item">
+              <h3>中身は、業務用倉庫のやり方</h3>
+              <p>
+                先入れ先出しも発注点も、倉庫の業界がとっくに答えを出していました。在庫の数は上書きせず、増えた・減ったを全部記録して合計を見せる帳簿式です。だから数が合わなくなりません。
+              </p>
+            </article>
+            <article class="reason-item">
+              <h3>気持ちよさは、続けるための道具</h3>
+              <p>
+                しまうと光って、続けるとチェインが伸びます。作業は増えていないのに、片づけた瞬間だけちゃんと返事がある。三日坊主にならなかったのは、たぶんこれのおかげです。
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="shell" id="pricing">
+        <div class="section-head reveal">
+          <p class="eyebrow">PRICING</p>
+          <h2>ほとんどの機能は、無料のままです。</h2>
           <p>
-            切れかけの看板みたいに、ジジッと光る。数字を読まなくても目の端に入る。うるさく感じたら、設定でまとめて消せる。
+            在庫・買い物リスト・レシピ・CSVの書き出しまで無料で使えます。お金がかかるのは、家族と同期して使いたくなった時だけです。
           </p>
         </div>
-      </li>
-      <li>
-        <div>
-          <h2>食べたい食材から、レシピを引く。</h2>
-          <p>
-            なすを押せば、なすの料理が出る。豚こまも押せば、なすと豚こまの料理になる。避けたい食材を選んでおくと、それを含む料理は別枠に分かれる（28品目に対応）。
-          </p>
+
+        <div class="pricing-wrap">
+          <article class="price-card reveal">
+            <span class="plan-name">NEOKURA / FREE</span>
+            <h3>ひとりで使うなら、これで足ります</h3>
+            <div class="price"><strong>¥0</strong><span>ずっと無料</span></div>
+            <ul class="feature-list">
+              <li>品目200件まで</li>
+              <li>保管場所3つまで</li>
+              <li>在庫・買い物・レシピ</li>
+              <li>CSVの書き出し・読み込み</li>
+              <li>アカウント登録不要</li>
+            </ul>
+          </article>
+
+          <article class="price-card pro reveal">
+            <span class="plan-name">NEOKURA / PRO</span>
+            <h3>家族みんなで、同じ冷蔵庫を見る</h3>
+            <div class="price"><strong>¥400</strong><span>/ 月</span></div>
+            <p class="annual">年額 ¥3,000</p>
+            <span class="trial">14日間無料</span>
+            <ul class="feature-list">
+              <li>家族の端末と在庫・買い物を同期</li>
+              <li>課金は世帯にひとりでいい</li>
+              <li>品目・保管場所の上限を解除</li>
+              <li>切れる前に知らせる買い物予測</li>
+              <li>好みに寄っていく献立提案</li>
+              <li>すべてのテーマ</li>
+            </ul>
+            <p class="price-note">価格・無料期間はApp Storeの表示が優先されます。</p>
+          </article>
         </div>
-      </li>
-      <li>
-        <div>
-          <h2>蔵は、家族のもの。<span class="pro">PRO</span></h2>
-          <p>
-            「牛乳買ってきて」が家族のリストに届く。仕事帰りに蔵の中を見て、夕飯を決めてから帰れる。課金は世帯にひとりでいい。
-          </p>
+      </section>
+
+      <section class="shell" id="faq">
+        <div class="faq-grid">
+          <div class="faq-intro reveal">
+            <p class="eyebrow">FAQ / Support</p>
+            <h2>よくある質問</h2>
+            <p>そのほかの質問は<a href="support.html">サポート</a>で確認できます。</p>
+          </div>
+
+          <div class="faq-list reveal">
+            <details>
+              <summary>無料でどこまで使えますか？</summary>
+              <p>品目200件・保管場所3つまで、在庫管理・買い物リスト・レシピ・CSVなどの基本機能を使えます。</p>
+            </details>
+            <details>
+              <summary>アカウント登録は必要ですか？</summary>
+              <p>
+                不要です。データはまず端末内に保存され、コア機能はオフラインで動きます。家族共有には通信が必要です。
+              </p>
+            </details>
+            <details>
+              <summary>光や動きが苦手でも使えますか？</summary>
+              <p>設定から演出・音・触覚を個別にオフにできます。端末の「視差効果を減らす」にも対応します。</p>
+            </details>
+            <details>
+              <summary>アレルギー表示は信用してよいですか？</summary>
+              <p>
+                レシピの材料名から判定しますが、実際の商品や調味料の原材料まで保証するものではありません。<strong
+                  >商品表示を必ず確認してください。</strong
+                >
+              </p>
+            </details>
+            <details>
+              <summary>機種変更のときは？</summary>
+              <p>
+                設定からCSVで書き出して新しい端末へ読み込めます。Proでは家族共有と同じ仕組みで端末間の同期もできます。
+              </p>
+            </details>
+            <details>
+              <summary>Android版はありますか？</summary>
+              <p>現在はiPhone版のみです。Android版は検討していますが、時期はまだ約束できません。</p>
+            </details>
+            <details>
+              <summary>不具合や要望はどこへ送れますか？</summary>
+              <p>
+                <a href="mailto:yooooooooum41@gmail.com">yooooooooum41@gmail.com</a>
+                へご連絡ください。iOSのバージョンと、何をした時かを添えていただけると調査が早くなります。
+              </p>
+            </details>
+          </div>
         </div>
-      </li>
-    </ol>
 
-    <p class="rule" style="--dur: 9.7s; --d: 1.4s">────────────── FUNCTIONS ─────────────</p>
-
-    <table class="jp">
-      <tr>
-        <td>登録のしかた</td>
-        <td>ドット絵タイル / 品目名で検索 / バーコード（JAN）/ 音声 / レシートの撮影（OCR）/ QRラベル</td>
-      </tr>
-      <tr>
-        <td>検索</td>
-        <td>漢字・ひらがな・カタカナ・ローマ字のどれでも同じ食材に当たる</td>
-      </tr>
-      <tr>
-        <td>買い物</td>
-        <td>
-          店内モード（売り場順）/ 予定日を決めて買う / 家族への「頼み」/ 発注点を割ったら自動でリストへ /
-          LINEなどへ共有
-        </td>
-      </tr>
-      <tr>
-        <td>しまう</td>
-        <td>
-          スワイプで入庫。置き場所は前回から自動。期限はチップを1タップで調整。 その場で写真とメモも残せる
-        </td>
-      </tr>
-      <tr>
-        <td>使う・減らす</td>
-        <td>
-          スワイプで出庫 / レシピの「作った」で材料をまとめて消費 / 廃棄は理由つきで記録 / どれも取り消せる
-        </td>
-      </tr>
-      <tr>
-        <td>倉庫</td>
-        <td>
-          区画マップ / 場所の追加・編集 / 棚卸し（カウント→差分確認→確定）/
-          今日の1問だけ確認するサイクルカウント
-        </td>
-      </tr>
-      <tr>
-        <td>料理</td>
-        <td>
-          在庫から作れる順に520品 / 食材から逆引き（2つ選ぶとAND）/ アレルギーで分ける / 手順・コツ・調理時間
-          / 材料がどの棚にあるか
-        </td>
-      </tr>
-      <tr>
-        <td>防災</td>
-        <td>ローリングストック。家族の人数×日数から必要量を逆算して不足を出す</td>
-      </tr>
-      <tr>
-        <td>家電</td>
-        <td>保証期限の管理。切れる30日前・7日前・当日に通知</td>
-      </tr>
-      <tr>
-        <td>通知</td>
-        <td>期限アラート / 買い物リマインダー（曜日・時刻指定）/ 週次サマリ / 予定買いの当日朝</td>
-      </tr>
-      <tr>
-        <td>記録</td>
-        <td>購入履歴・よく買う品目・捨てたもの。金額は入れた時だけ出る</td>
-      </tr>
-      <tr>
-        <td>実績</td>
-        <td>38種の称号。解除すると階級と限定の配色が手に入る</td>
-      </tr>
-      <tr>
-        <td>データ</td>
-        <td>CSVで書き出し・読み込み（無料）</td>
-      </tr>
-      <tr>
-        <td>見た目</td>
-        <td>テーマと配色を切り替え。演出・音・触覚はそれぞれ個別にオフ</td>
-      </tr>
-    </table>
-
-    <p class="rule" style="--dur: 11.2s; --d: 3.1s">──────────── FREE / PRO ─────────────</p>
-
-    <table class="jp">
-      <tr>
-        <td>無料でできる</td>
-        <td>
-          上に書いた機能すべて。CSVの書き出しも含みます。 制限は品目200・保管場所3つという「量」だけです
-        </td>
-      </tr>
-      <tr>
-        <td>Pro：家族共有</td>
-        <td>
-          家族の端末と在庫・買い物リストを同期。
-          <b class="lit-pink">1人が課金すれば世帯全員</b>に行き渡ります
-        </td>
-      </tr>
-      <tr>
-        <td>Pro：買い物予測</td>
-        <td>使うペースを覚えて、切れる前に買い物リストへ出します</td>
-      </tr>
-      <tr>
-        <td>Pro：献立の学習</td>
-        <td>作った料理の傾向から、提案があなたの好みに寄っていきます</td>
-      </tr>
-      <tr>
-        <td>Pro：上限の解除</td>
-        <td>品目・保管場所が無制限。全テーマ使い放題</td>
-      </tr>
-    </table>
-
-    <div class="wall">
-      <img
-        src="assets/wall-dishes.webp"
-        width="768"
-        height="192"
-        alt="完成した料理のドット絵が12×3のタイルで並んでいる様子"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-    <p class="wall-cap jp"><b class="lit">520品</b>のうち36点。家にある材料で作れる順に並びます。</p>
-
-    <p class="rule" style="--dur: 10.4s; --d: 5.6s">──────────────── WHY ────────────────</p>
-
-    <ol class="jp">
-      <li>
-        <div>
-          <h2>なぜ「倉庫」なのか。</h2>
+        <div class="final-cta reveal">
+          <p class="eyebrow">GET STARTED</p>
+          <h2>今日の買い物から、<br />始められます。</h2>
           <p>
-            先入先出、棚番、発注点。この悩みは倉庫業界が何十年も前に解き終わっている。家の冷蔵庫に使わない理由が見つからなかった。
+            最初に冷蔵庫の中身を全部登録する必要はありません。買った物をしまうところから始めると、よく使う物から順に在庫が揃っていきます。
           </p>
+          <a class="store-badge" href="https://apps.apple.com/jp/app/id6795165520">
+            <img src="assets/appstore-badge.svg" width="218" height="80" alt="App Storeからダウンロード" />
+          </a>
+          <span class="platform-note">無料 ・ iPhone / iOS 16.4以降 ・ 日本語 / English</span>
         </div>
-      </li>
-      <li>
-        <div>
-          <h2>なぜドット絵なのか。</h2>
-          <p>
-            1,182品目を文字のリストにしたら、誰も探さない。絵なら探せる。小さくしても潰れないのはドット絵だけだった。それで1,723枚描いた。
-          </p>
-        </div>
-      </li>
-      <li>
-        <div>
-          <h2>なぜネオンなのか。</h2>
-          <p>
-            「あと2日」は、読まないと伝わらない。切れかけの光は、読まなくても伝わる。街のネオンにしたのは、光が切れかけることに理由がほしかったから。
-          </p>
-        </div>
-      </li>
-      <li>
-        <div>
-          <h2>数字がずれない理由。</h2>
-          <p>
-            在庫の数字は上書きしない。増えた・減ったを全部積んで、合計を見せる。取り消しも逆向きに積む。帳簿と同じ作りだから、数がずれようがない。
-          </p>
-        </div>
-      </li>
-    </ol>
-
-    <p class="rule" style="--dur: 12.9s; --d: 2.2s">────────────── SCREENS ──────────────</p>
-
-    <!-- 画像は assets/screens/ に配置する(下の「素材」を参照)。
-         幅の実寸を width/height に入れて CLS を出さないこと。 -->
-    <div class="shots">
-      <img
-        src="assets/screens/01-home.webp"
-        width="540"
-        height="1170"
-        alt="ホーム画面。今日やることが1つだけ光り、下に倉庫マップが並んでいる"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        src="assets/screens/02-cook.webp"
-        width="540"
-        height="1170"
-        alt="つくる画面。家にある材料で作れる料理が作れる順に並んでいる"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        src="assets/screens/03-ingredient-search.webp"
-        width="540"
-        height="1170"
-        alt="食材から探す画面。食材のドット絵タイルが並び、在庫のあるものが先に出ている"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        src="assets/screens/04-catalog.webp"
-        width="540"
-        height="1170"
-        alt="品目カタログ。野菜のドット絵タイルが画面いっぱいに並んでいる"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        src="assets/screens/05-shopping.webp"
-        width="540"
-        height="1170"
-        alt="買い物リスト。買う・買った・しまう が1画面に並んでいる"
-        loading="lazy"
-        decoding="async"
-      />
-      <img
-        src="assets/screens/06-warehouse.webp"
-        width="540"
-        height="1170"
-        alt="倉庫マップ。冷蔵庫・冷凍庫・棚の区画と、期限が近い在庫の一覧"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-
-    <div class="cta-wrap">
-      <!-- Apple公式の日本語バッジ(White lockup)。暗い背景なので白版を使う。
-           バッジ自体を加工しない・比率を変えない・他のボタンと並べて小さくしない、
-           がガイドラインの要点。原寸は 108.85×40 で、ここでは2倍に置いている。
-           https://developer.apple.com/app-store/marketing/guidelines/jp/#section-badges -->
-      <a class="cta" href="https://apps.apple.com/jp/app/id6795165520">
-        <img src="assets/appstore-badge.svg" width="218" height="80" alt="App Store からダウンロード" />
-      </a>
-      <p class="cta-note jp">無料 ・ iPhone / iOS 16.4以降 ・ 日本語 / English</p>
-    </div>
-
-    <p class="rule" style="--dur: 9.1s; --d: 6.8s">──────────────── FAQ ────────────────</p>
-
-    <dl class="faq jp">
-      <dt>無料でどこまで使えますか？</dt>
-      <dd>
-        在庫管理・レシピ・買い物リスト・CSVエクスポートは全部無料です。Proは家族共有と、買い物予測・好みに寄る献立提案だけです。
-      </dd>
-
-      <dt>アカウント登録は必要ですか？</dt>
-      <dd>
-        不要です。データは端末の中にあり、ネットを切っても動きます。家族共有だけは通信しますが、こちらも匿名で、メールアドレスも名前もお預かりしません。
-      </dd>
-
-      <dt>機種変更のときは？</dt>
-      <dd>
-        設定からCSVで書き出して、新しい端末で読み込んでください。iCloudバックアップの対象にもなっています。
-      </dd>
-
-      <dt>アレルギー表示は信用してよいですか？</dt>
-      <dd>
-        レシピの材料名からの判定です。醤油の小麦のように見落としやすいものも拾いますが、<strong
-          >実際の商品表示は必ずご確認ください。</strong
-        >
-      </dd>
-
-      <dt>光の明滅が苦手です</dt>
-      <dd>
-        設定の「演出」でまとめて消せます。端末側で「視差効果を減らす」を有効にしている場合も自動で止まります。
-      </dd>
-
-      <dt>Android版は？</dt>
-      <dd>まだありません。検討はしています。</dd>
-
-      <dt>家族共有はどう始めますか？</dt>
-      <dd>
-        設定の「家族と共有」から世帯を作り、出てきた6桁のコードかQRを家族に渡します。相手は同じ画面でコードを入れるだけ。招待コードは7日で切れますが、招待画面を開き直せば新しいものが出ます。
-      </dd>
-
-      <dt>家族の人数ぶん課金が要りますか？</dt>
-      <dd>要りません。<strong>1人が課金すれば世帯全員</strong>が使えます。誰が払っているかは問いません。</dd>
-
-      <dt>無料のままだと何ができなくなりますか？</dt>
-      <dd>
-        機能はどれも制限していません。品目200・保管場所3つという量の上限だけです。家族共有と、買い物予測・献立の学習はProの機能です。
-      </dd>
-
-      <dt>iPhoneを2台持っています。同期できますか？</dt>
-      <dd>家族共有と同じ仕組みで、自分の端末どうしでも同期できます（Pro）。</dd>
-
-      <dt>バーコードで出てこない商品があります</dt>
-      <dd>
-        JANの辞書に無い商品は名前が引けません。その場合は手で名前を入れて登録してください。一度登録すると次からはその端末で引けるようになります。
-      </dd>
-
-      <dt>金額は入れないといけませんか？</dt>
-      <dd>任意です。入れなければ分析にも金額は出ません。レシートの撮影で読み取ることもできます。</dd>
-
-      <dt>期限を入れずに登録してもいいですか？</dt>
-      <dd>構いません。期限のないものは明滅しないだけです。長く動いていない在庫は別の形で知らせます。</dd>
-
-      <dt>間違えて減らしてしまいました</dt>
-      <dd>
-        直後に出るトーストの「もどす」で取り消せます。少し時間が経っていても、品目の履歴から打ち消せます。記録は消えず、逆向きの記録が足される形です。
-      </dd>
-
-      <dt>不具合を見つけました / 要望があります</dt>
-      <dd>
-        <a href="mailto:yooooooooum41@gmail.com">yooooooooum41@gmail.com</a>
-        までご連絡ください。iOSのバージョンと、可能であれば何をした時かを教えていただけると早く直せます。
-      </dd>
-    </dl>
+      </section>
+    </main>
 
     <footer>
-      <a href="https://apps.apple.com/jp/app/id6795165520">App Store</a> ・
-      <a href="support.html">サポート</a> ・ <a href="privacy.html">プライバシーポリシー</a> ・
-      <a href="terms.html">利用規約</a> ・ <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a><br />
-      © 2026 Yoichi Saito
+      <div class="shell footer-inner">
+        <div class="footer-brand">© 2026 YOICHI SAITO / NEOKURA</div>
+        <div class="footer-links">
+          <a href="https://apps.apple.com/jp/app/id6795165520">App Store</a>
+          <a href="support.html">サポート</a>
+          <a href="privacy.html">プライバシーポリシー</a>
+          <a href="terms.html">利用規約</a>
+          <a href="mailto:yooooooooum41@gmail.com">お問い合わせ</a>
+        </div>
+      </div>
     </footer>
+
     <script>
-      /* 明滅が売りである以上、止められることは外せない。CSSでは <video> を
-         止められないので、ここだけJSを使う。ページ内の唯一のスクリプト。 */
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        for (const v of document.querySelectorAll('video')) {
-          v.autoplay = false;
-          v.removeAttribute('loop');
-          v.controls = true;
-          v.pause();
-        }
+      const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+      const nav = document.querySelector('.nav');
+      const reveals = document.querySelectorAll('.reveal');
+
+      const updateNav = () => nav.classList.toggle('is-scrolled', scrollY > 12);
+      updateNav();
+      addEventListener('scroll', updateNav, { passive: true });
+
+      if (reduceMotion.matches) {
+        reveals.forEach((element) => element.classList.add('is-visible'));
+        document.querySelectorAll('video').forEach((video) => {
+          video.autoplay = false;
+          video.removeAttribute('loop');
+          video.controls = true;
+          video.pause();
+        });
+      } else {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.08, rootMargin: '0px 0px -6% 0px' },
+        );
+        reveals.forEach((element) => observer.observe(element));
       }
     </script>
   </body>
